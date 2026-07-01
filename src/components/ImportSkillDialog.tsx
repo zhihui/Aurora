@@ -327,10 +327,16 @@ export function ImportSkillDialog({
               {source === "cmd" && (
                 <>
                   <p className="text-muted-foreground text-[11px] leading-relaxed select-none">
-                    粘贴 <code className="font-mono">npx skills add &lt;repo&gt; [--skill &lt;name&gt;]</code>{" "}
-                    或直接 <code className="font-mono">owner/repo</code>。带{" "}
-                    <code className="font-mono">--skill</code> 时只导入该指定技能。
+                    支持以下格式命令
                   </p>
+                  <ul className="text-muted-foreground space-y-0.5 text-[11px] leading-relaxed select-none">
+                    <li className="font-mono">npx skills add owner/repo</li>
+                    <li className="font-mono">或 npx skills add owner/repo --skill skillname</li>
+                    <li className="font-mono">或 npx skills add https://github.com/ownser/repo</li>
+                    <li className="font-mono">
+                      或 npx skills add https://github.com/ownser/repo --skill skillname
+                    </li>
+                  </ul>
                   <Field label="skills add 命令">
                     <textarea
                       value={cmdInput}
