@@ -33,3 +33,8 @@ src-tauri/gen
 # Claude Code session data
 .claude
 
+# 项目内部文档 / 设计稿，不进仓库
+CLAUDE.md
+agents-config.md
+design
+
