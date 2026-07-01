@@ -184,10 +184,49 @@ fn extract_tar_gz<R: Read>(reader: R, dest: &Path) -> Result<(), String> {
         .map_err(|e| format!("读取归档失败: {e}"))?
     {
         let mut entry = entry.map_err(|e| format!("读取条目失败: {e}"))?;
-        // unpack_in guards against paths escaping `dest`.
-        entry
-            .unpack_in(dest)
-            .map_err(|e| format!("解压失败: {e}"))?;
+        // Manual extraction instead of `unpack_in`: the tar crate's unpack_in
+        // tries to create symlinks and set permissions, which fails on Windows
+        // (GitHub tarballs often carry symlink entries). We only handle
+        // directories and regular files, skipping links and PAX/special headers.
+        let raw_path = match entry.path() {
+            Ok(p) => p.into_owned(),
+            Err(_) => continue, // PAX global headers etc. — no usable path
+        };
+        // Reject absolute paths and `..` traversal (tar-slip).
+        let mut safe = PathBuf::new();
+        let mut tainted = false;
+        for comp in raw_path.components() {
+            match comp {
+                std::path::Component::Normal(c) => safe.push(c),
+                std::path::Component::CurDir => {}
+                _ => {
+                    tainted = true;
+                    break;
+                }
+            }
+        }
+        if tainted || safe.as_os_str().is_empty() {
+            continue;
+        }
+        let out_path = dest.join(&safe);
+        match entry.header().entry_type() {
+            tar::EntryType::Directory => {
+                std::fs::create_dir_all(&out_path)
+                    .map_err(|e| format!("创建目录失败 {}: {e}", safe.display()))?;
+            }
+            tar::EntryType::Regular | tar::EntryType::Continuous => {
+                if let Some(parent) = out_path.parent() {
+                    std::fs::create_dir_all(parent).map_err(|e| format!("创建目录失败: {e}"))?;
+                }
+                let mut out = std::fs::File::create(&out_path)
+                    .map_err(|e| format!("写入失败 {}: {e}", safe.display()))?;
+                std::io::copy(&mut entry, &mut out)
+                    .map_err(|e| format!("解压失败 {}: {e}", safe.display()))?;
+            }
+            // Symlinks, hardlinks, PAX headers, etc. — skip on all platforms.
+            // Skill import only needs regular files (SKILL.md + assets).
+            _ => continue,
+        }
     }
     Ok(())
 }
