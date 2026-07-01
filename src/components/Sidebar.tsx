@@ -48,15 +48,8 @@ export function Sidebar({
       style={{ paddingTop: topInset }}
       className="bg-sidebar text-sidebar-foreground flex flex-col"
     >
-      {/* brand */}
-      <div className="flex items-center justify-center px-4 pt-1.5 pb-3.5">
-        <b className="font-heading text-[19px] font-bold tracking-tight select-none max-[720px]:hidden">
-          Aurora
-        </b>
-      </div>
-
       {/* primary nav — grouped by section title with a solid hairline */}
-      <nav className="flex flex-col gap-2.5 px-2.5">
+      <nav className="flex flex-col gap-2.5 px-2.5 pt-2">
         {NAV_GROUPS.map((group) => (
           <div key={group.title} className="flex flex-col gap-1">
             <div className="flex flex-col gap-1.5 max-[720px]:hidden">

@@ -31,6 +31,12 @@ export default function App() {
     listAgents().then(setAgents).catch(() => setAgents([]));
   }, []);
 
+  // Called by Settings after add/remove agent so the skills/packs/agent-skills
+  // pages see the updated agent list without a full reload.
+  const reloadAgents = () => {
+    listAgents().then(setAgents).catch(() => setAgents([]));
+  };
+
   return (
     <div className="bg-background text-foreground h-screen overflow-hidden">
       {/* macOS only: transparent draggable strip aligned with the traffic lights */}
@@ -49,7 +55,7 @@ export default function App() {
           {view === "agents" && <AgentSkills agents={agents} />}
           {view === "models" && <Models />}
           {view === "agent-models" && <AgentModels />}
-          {view === "settings" && <Settings />}
+          {view === "settings" && <Settings onAgentsChanged={reloadAgents} />}
         </main>
       </div>
 

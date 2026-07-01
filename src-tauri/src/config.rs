@@ -240,6 +240,21 @@ pub fn normalize_model_capabilities(caps: &[String]) -> Vec<String> {
         .collect()
 }
 
+/// A user-added agent skill directory. Built-in agents (claude/codex/opencode/
+/// agents/kimi) are not stored here — only extras the user added from the
+/// candidate list. `rel_dir` is relative to the user's home directory.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct CustomAgent {
+    #[serde(default)]
+    pub id: String,
+    #[serde(default)]
+    pub name: String,
+    #[serde(default)]
+    pub color: String,
+    #[serde(default)]
+    pub rel_dir: String,
+}
+
 /// Top-level config.json document. Kept as an object so future settings can be
 /// added without breaking existing files.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -250,6 +265,13 @@ pub struct Config {
     pub providers: Vec<Provider>,
     #[serde(default)]
     pub agent_models: BTreeMap<String, AgentModelConfig>,
+    /// User-added agents (beyond the built-in set).
+    #[serde(default)]
+    pub custom_agents: Vec<CustomAgent>,
+    /// Built-in agent ids the user has explicitly removed (e.g. "kimi"), so
+    /// they don't reappear on restart. The 4 core built-ins can't be removed.
+    #[serde(default)]
+    pub removed_builtin: Vec<String>,
 }
 
 pub fn load() -> Result<Config, String> {

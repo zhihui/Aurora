@@ -30,6 +30,14 @@ export type AgentDirInfo = {
   path: string;
   exists: boolean;
   skill_count: number;
+  removable: boolean;
+};
+
+export type CandidateAgent = {
+  id: string;
+  name: string;
+  color: string;
+  rel_dir: string;
 };
 
 export type LlmConfig = {
@@ -143,6 +151,12 @@ export const listAgents = () => invoke<AgentInfo[]>("list_agents");
 export const listAgentDirs = () => invoke<AgentDirInfo[]>("list_agent_dirs");
 export const createAgentDir = (agent: string) =>
   invoke<void>("create_agent_dir", { agent });
+export const listCandidateAgents = () =>
+  invoke<CandidateAgent[]>("list_candidate_agents");
+export const addAgent = (id: string) =>
+  invoke<AgentDirInfo>("add_agent", { id });
+export const removeAgent = (id: string) =>
+  invoke<void>("remove_agent", { id });
 
 // ─── skill center ───
 export const listSkills = () => invoke<Skill[]>("list_skills");

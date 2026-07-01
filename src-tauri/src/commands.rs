@@ -2,7 +2,7 @@ use crate::config;
 use crate::import::{self, ImportResult, ImportSelection, ParsedImport};
 use crate::meta::read_description;
 use crate::packs::{self, StoredPack};
-use crate::paths::{self, AGENTS};
+use crate::paths;
 use serde::Serialize;
 use serde_json::{Map, Value};
 use std::path::{Path, PathBuf};
@@ -78,6 +78,8 @@ pub struct AgentDirInfo {
     pub path: String,
     pub exists: bool,
     pub skill_count: usize,
+    /// Whether the user is allowed to remove this agent entry.
+    pub removable: bool,
 }
 
 /// LLM config returned to the frontend — the api key is intentionally omitted,
@@ -159,10 +161,10 @@ pub struct TranslationDto {
 fn assigned_agents_for(skill: &str) -> Result<Vec<String>, String> {
     let center = paths::skill_path(skill)?;
     let mut ids = Vec::new();
-    for agent in AGENTS {
+    for agent in paths::load_agents() {
         let link = agent.skills_dir()?.join(skill);
         if paths::symlink_points_to(&link, &center) {
-            ids.push(agent.id.to_string());
+            ids.push(agent.id);
         }
     }
     Ok(ids)
@@ -200,12 +202,12 @@ fn is_hidden(name: &std::ffi::OsStr) -> bool {
 
 #[tauri::command]
 pub fn list_agents() -> Vec<AgentInfo> {
-    AGENTS
-        .iter()
+    paths::load_agents()
+        .into_iter()
         .map(|a| AgentInfo {
-            id: a.id.to_string(),
-            name: a.name.to_string(),
-            color: a.color.to_string(),
+            id: a.id,
+            name: a.name,
+            color: a.color,
         })
         .collect()
 }
@@ -213,7 +215,7 @@ pub fn list_agents() -> Vec<AgentInfo> {
 #[tauri::command]
 pub fn list_agent_dirs() -> Result<Vec<AgentDirInfo>, String> {
     let mut out = Vec::new();
-    for agent in AGENTS {
+    for agent in paths::load_agents() {
         let dir = agent.skills_dir()?;
         let exists = dir.is_dir();
         let skill_count = if exists {
@@ -235,9 +237,10 @@ pub fn list_agent_dirs() -> Result<Vec<AgentDirInfo>, String> {
             0
         };
         out.push(AgentDirInfo {
-            id: agent.id.to_string(),
-            name: agent.name.to_string(),
-            color: agent.color.to_string(),
+            removable: paths::is_removable(&agent.id),
+            id: agent.id,
+            name: agent.name,
+            color: agent.color,
             path: dir.to_string_lossy().to_string(),
             exists,
             skill_count,
@@ -248,8 +251,115 @@ pub fn list_agent_dirs() -> Result<Vec<AgentDirInfo>, String> {
 
 #[tauri::command]
 pub fn create_agent_dir(agent: String) -> Result<(), String> {
-    let a = paths::agent_by_id(&agent).ok_or("未知 agent")?;
+    let a = paths::find_agent(&agent).ok_or("未知 agent")?;
     std::fs::create_dir_all(a.skills_dir()?).map_err(|e| format!("创建目录失败: {e}"))
+}
+
+/// A candidate agent the user may add from the Settings page.
+#[derive(Serialize)]
+pub struct CandidateAgentDto {
+    pub id: String,
+    pub name: String,
+    pub color: String,
+    pub rel_dir: String,
+}
+
+/// Candidate agents (from the preset list) not yet in the active list.
+#[tauri::command]
+pub fn list_candidate_agents() -> Vec<CandidateAgentDto> {
+    let loaded = paths::load_agents();
+    let active: std::collections::HashSet<&str> = loaded.iter().map(|a| a.id.as_str()).collect();
+    paths::CANDIDATE_AGENTS
+        .iter()
+        .filter(|c| !active.contains(c.id))
+        .map(|c| CandidateAgentDto {
+            id: c.id.to_string(),
+            name: c.name.to_string(),
+            color: c.color.to_string(),
+            rel_dir: c.rel_dir.to_string(),
+        })
+        .collect()
+}
+
+/// Add a candidate agent by id. The skills directory is created on disk.
+#[tauri::command]
+pub fn add_agent(id: String) -> Result<AgentDirInfo, String> {
+    let id = id.trim().to_string();
+    let def = paths::candidate_by_id(&id).ok_or("未知的候选 agent")?;
+    let mut cfg = config::load()?;
+    // Reject duplicates (already built-in or already added).
+    if paths::find_agent(&id).is_some() {
+        return Err("该 agent 已存在".to_string());
+    }
+    // If it was previously removed (e.g. kimi), un-remove it.
+    cfg.removed_builtin.retain(|r| r != &id);
+    cfg.custom_agents.push(config::CustomAgent {
+        id: def.id.to_string(),
+        name: def.name.to_string(),
+        color: def.color.to_string(),
+        rel_dir: def.rel_dir.to_string(),
+    });
+    config::save(&cfg)?;
+    let agent = paths::Agent {
+        id: def.id.to_string(),
+        name: def.name.to_string(),
+        color: def.color.to_string(),
+        rel_dir: def.rel_dir.to_string(),
+    };
+    let dir = agent.skills_dir()?;
+    std::fs::create_dir_all(&dir).map_err(|e| format!("创建目录失败: {e}"))?;
+    Ok(AgentDirInfo {
+        removable: true,
+        id: agent.id,
+        name: agent.name,
+        color: agent.color,
+        path: dir.to_string_lossy().to_string(),
+        exists: true,
+        skill_count: 0,
+    })
+}
+
+/// Remove an agent entry. Only removable agents (kimi + custom) can be removed;
+/// the core 4 built-ins are protected. Center softlinks under the agent's skills
+/// directory are cleaned up; the directory itself and external/real entries are
+/// left untouched.
+#[tauri::command]
+pub fn remove_agent(id: String) -> Result<(), String> {
+    let id = id.trim().to_string();
+    if !paths::is_removable(&id) {
+        return Err("该 agent 不可移除".to_string());
+    }
+    let agent = paths::find_agent(&id).ok_or("未知 agent")?;
+
+    // Clean only center softlinks in this agent's skills dir.
+    if let Ok(dir) = agent.skills_dir() {
+        if let Ok(rd) = std::fs::read_dir(&dir) {
+            for entry in rd.flatten() {
+                let p = entry.path();
+                if let Some(link_name) = entry.file_name().to_str() {
+                    if let Ok(center) = paths::skill_path(link_name) {
+                        if paths::symlink_points_to(&p, &center) {
+                            let _ = remove_link(&p);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let mut cfg = config::load()?;
+    let is_builtin =
+        paths::candidate_by_id(&id).is_none() && cfg.custom_agents.iter().all(|c| c.id != id);
+    if is_builtin {
+        // A built-in removable agent (kimi): record removal so it stays gone.
+        if !cfg.removed_builtin.contains(&id) {
+            cfg.removed_builtin.push(id);
+        }
+    } else {
+        // User-added: drop from custom_agents.
+        cfg.custom_agents.retain(|c| c.id != id);
+    }
+    config::save(&cfg)
 }
 
 // ─────────────────────────── skill center ───────────────────────────
@@ -324,7 +434,7 @@ pub fn delete_skill(name: String) -> Result<(), String> {
     }
 
     // 2. Remove center softlinks in each agent (protect real dirs / external links).
-    for agent in AGENTS {
+    for agent in paths::load_agents() {
         let link = agent.skills_dir()?.join(&name);
         if paths::symlink_points_to(&link, &center) {
             remove_link(&link).map_err(|e| format!("移除软链接失败: {e}"))?;
@@ -355,7 +465,7 @@ fn link_skill_into(agent_dir: &Path, name: &str, center: &Path) -> Result<(), St
 #[tauri::command]
 pub fn assign_skill(skill: String, agent: String) -> Result<(), String> {
     validate_name(&skill)?;
-    let a = paths::agent_by_id(&agent).ok_or("未知 agent")?;
+    let a = paths::find_agent(&agent).ok_or("未知 agent")?;
     let center = paths::skill_path(&skill)?;
     if !center.is_dir() {
         return Err("技能中心不存在该技能".to_string());
@@ -366,7 +476,7 @@ pub fn assign_skill(skill: String, agent: String) -> Result<(), String> {
 #[tauri::command]
 pub fn unassign_skill(skill: String, agent: String) -> Result<(), String> {
     validate_name(&skill)?;
-    let a = paths::agent_by_id(&agent).ok_or("未知 agent")?;
+    let a = paths::find_agent(&agent).ok_or("未知 agent")?;
     let center = paths::skill_path(&skill)?;
     let link = a.skills_dir()?.join(&skill);
     // Only remove our own center softlink.
@@ -383,7 +493,7 @@ fn pack_assigned_agents(skills: &[String]) -> Result<Vec<String>, String> {
         return Ok(Vec::new());
     }
     let mut ids = Vec::new();
-    'agents: for agent in AGENTS {
+    'agents: for agent in paths::load_agents() {
         let base = agent.skills_dir()?;
         for s in skills {
             let center = paths::skill_path(s)?;
@@ -391,7 +501,7 @@ fn pack_assigned_agents(skills: &[String]) -> Result<Vec<String>, String> {
                 continue 'agents;
             }
         }
-        ids.push(agent.id.to_string());
+        ids.push(agent.id);
     }
     Ok(ids)
 }
@@ -474,7 +584,7 @@ pub fn add_skill_to_pack(pack: String, skill: String) -> Result<(), String> {
     if center.is_dir() {
         let mut errors = Vec::new();
         for id in &assigned {
-            if let Some(a) = paths::agent_by_id(id) {
+            if let Some(a) = paths::find_agent(id) {
                 if let Ok(dir) = a.skills_dir() {
                     if let Err(e) = link_skill_into(&dir, &skill, &center) {
                         errors.push(e);
@@ -521,7 +631,7 @@ pub fn remove_skill_from_pack(pack: String, skill: String) -> Result<(), String>
         if still_needed {
             continue;
         }
-        if let Some(a) = paths::agent_by_id(id) {
+        if let Some(a) = paths::find_agent(id) {
             if let Ok(dir) = a.skills_dir() {
                 let link = dir.join(&skill);
                 if paths::symlink_points_to(&link, &center) {
@@ -535,7 +645,7 @@ pub fn remove_skill_from_pack(pack: String, skill: String) -> Result<(), String>
 
 #[tauri::command]
 pub fn assign_pack(pack: String, agent: String) -> Result<(), String> {
-    let a = paths::agent_by_id(&agent).ok_or("未知 agent")?;
+    let a = paths::find_agent(&agent).ok_or("未知 agent")?;
     let all = packs::load()?;
     let p = all.iter().find(|p| p.name == pack).ok_or("技能包不存在")?;
     let dir = a.skills_dir()?;
@@ -559,7 +669,7 @@ pub fn assign_pack(pack: String, agent: String) -> Result<(), String> {
 
 #[tauri::command]
 pub fn unassign_pack(pack: String, agent: String) -> Result<(), String> {
-    let a = paths::agent_by_id(&agent).ok_or("未知 agent")?;
+    let a = paths::find_agent(&agent).ok_or("未知 agent")?;
     let all = packs::load()?;
     let p = all.iter().find(|p| p.name == pack).ok_or("技能包不存在")?;
     let dir = a.skills_dir()?;
@@ -577,7 +687,7 @@ pub fn unassign_pack(pack: String, agent: String) -> Result<(), String> {
 
 #[tauri::command]
 pub fn list_agent_skills(agent: String) -> Result<Vec<AgentSkill>, String> {
-    let a = paths::agent_by_id(&agent).ok_or("未知 agent")?;
+    let a = paths::find_agent(&agent).ok_or("未知 agent")?;
     let dir = a.skills_dir()?;
     let mut out = Vec::new();
     if !dir.is_dir() {
@@ -633,7 +743,7 @@ pub fn list_agent_skills(agent: String) -> Result<Vec<AgentSkill>, String> {
 #[tauri::command]
 pub fn remove_agent_skill(agent: String, name: String) -> Result<(), String> {
     validate_name(&name)?;
-    let a = paths::agent_by_id(&agent).ok_or("未知 agent")?;
+    let a = paths::find_agent(&agent).ok_or("未知 agent")?;
     let center = paths::skill_path(&name)?;
     let link = a.skills_dir()?.join(&name);
     if paths::symlink_points_to(&link, &center) {
@@ -649,7 +759,7 @@ pub fn remove_agent_skill(agent: String, name: String) -> Result<(), String> {
 pub fn import_skill(agent: String, name: String) -> Result<(), String> {
     validate_name(&name)?;
     paths::ensure_hub()?;
-    let a = paths::agent_by_id(&agent).ok_or("未知 agent")?;
+    let a = paths::find_agent(&agent).ok_or("未知 agent")?;
     let entry = a.skills_dir()?.join(&name);
     if std::fs::symlink_metadata(&entry).is_err() {
         return Err("该技能不存在".to_string());

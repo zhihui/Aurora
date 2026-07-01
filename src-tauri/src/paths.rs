@@ -1,50 +1,154 @@
+use crate::config;
 use std::path::{Path, PathBuf};
 
 /// A supported agent and the absolute path to its skills directory.
+/// Owned type: built-in entries are cloned from the static tables, user-added
+/// entries come from config.json.
+#[derive(Debug, Clone)]
 pub struct Agent {
-    pub id: &'static str,
-    pub name: &'static str,
+    pub id: String,
+    pub name: String,
     /// CSS color used by the UI for this agent's badge.
-    pub color: &'static str,
-    /// Path relative to the user's home directory.
-    rel_dir: &'static str,
+    pub color: String,
+    /// Path relative to the user's home directory, e.g. ".claude/skills".
+    pub rel_dir: String,
 }
 
-pub const AGENTS: &[Agent] = &[
-    Agent {
+/// Static descriptor used by both the built-in table and the candidate table.
+pub struct AgentDef {
+    pub id: &'static str,
+    pub name: &'static str,
+    pub color: &'static str,
+    pub rel_dir: &'static str,
+}
+
+/// Built-in agents, always present unless the user explicitly removed them
+/// (only `kimi` is removable; the core 4 are not). Order is the display order.
+const BUILTIN_AGENTS: &[AgentDef] = &[
+    AgentDef {
         id: "claude",
         name: "Claude Code",
         color: "#D97757",
         rel_dir: ".claude/skills",
     },
-    Agent {
+    AgentDef {
         id: "codex",
         name: "Codex",
         color: "#10A37F",
         rel_dir: ".codex/skills",
     },
-    Agent {
-        id: "kimi",
-        name: "Kimi Code",
-        color: "#6366F1",
-        rel_dir: ".kimi-code/skills",
-    },
-    Agent {
+    AgentDef {
         id: "opencode",
         name: "Opencode",
         color: "#EAB308",
         rel_dir: ".config/opencode/skills",
     },
-    Agent {
+    AgentDef {
         id: "agents",
         name: "通用 Agent",
         color: "#64748B",
         rel_dir: ".agents/skills",
     },
+    AgentDef {
+        id: "kimi",
+        name: "Kimi Code",
+        color: "#6366F1",
+        rel_dir: ".kimi-code/skills",
+    },
 ];
 
-pub fn agent_by_id(id: &str) -> Option<&'static Agent> {
-    AGENTS.iter().find(|a| a.id == id)
+/// Agents the user may add from the Settings page. Each carries a fixed
+/// skills directory under the home folder.
+pub const CANDIDATE_AGENTS: &[AgentDef] = &[
+    AgentDef {
+        id: "codebuddy",
+        name: "CodeBuddy",
+        color: "#3B82F6",
+        rel_dir: ".codebuddy/skills",
+    },
+    AgentDef {
+        id: "hermes",
+        name: "Hermes Agent",
+        color: "#8B5CF6",
+        rel_dir: ".hermes/skills",
+    },
+    AgentDef {
+        id: "qoder",
+        name: "Qoder",
+        color: "#EC4899",
+        rel_dir: ".qoder/skills",
+    },
+    AgentDef {
+        id: "qwen",
+        name: "Qwen Code",
+        color: "#0EA5E9",
+        rel_dir: ".qwen/skills",
+    },
+    AgentDef {
+        id: "trae",
+        name: "Trae",
+        color: "#F97316",
+        rel_dir: ".trae/skills",
+    },
+    AgentDef {
+        id: "workbuddy",
+        name: "Workbuddy",
+        color: "#14B8A6",
+        rel_dir: ".workbuddy/skills",
+    },
+];
+
+/// The 4 core built-in agent ids that can never be removed.
+const NON_REMOVABLE: &[&str] = &["claude", "codex", "opencode", "agents"];
+
+fn agent_def_to_agent(d: &AgentDef) -> Agent {
+    Agent {
+        id: d.id.to_string(),
+        name: d.name.to_string(),
+        color: d.color.to_string(),
+        rel_dir: d.rel_dir.to_string(),
+    }
+}
+
+/// True for built-in agents the user is allowed to remove (kimi), false for the
+/// core 4. Custom (user-added) agents are always removable.
+pub fn is_removable(id: &str) -> bool {
+    !NON_REMOVABLE.contains(&id)
+}
+
+/// Look up a candidate definition by id.
+pub fn candidate_by_id(id: &str) -> Option<&'static AgentDef> {
+    CANDIDATE_AGENTS.iter().find(|c| c.id == id)
+}
+
+/// Load the full active agent list: built-ins (minus any the user removed) plus
+/// user-added custom agents. Built-ins come first, in display order.
+pub fn load_agents() -> Vec<Agent> {
+    let cfg = config::load().unwrap_or_default();
+    let removed: Vec<&str> = cfg.removed_builtin.iter().map(|s| s.as_str()).collect();
+    let mut out: Vec<Agent> = BUILTIN_AGENTS
+        .iter()
+        .filter(|d| !removed.contains(&d.id))
+        .map(agent_def_to_agent)
+        .collect();
+    for ca in &cfg.custom_agents {
+        // Skip custom agents that collide with a built-in id already present.
+        if out.iter().any(|a| a.id == ca.id) {
+            continue;
+        }
+        out.push(Agent {
+            id: ca.id.clone(),
+            name: ca.name.clone(),
+            color: ca.color.clone(),
+            rel_dir: ca.rel_dir.clone(),
+        });
+    }
+    out
+}
+
+/// Find a single agent by id from the active list.
+pub fn find_agent(id: &str) -> Option<Agent> {
+    load_agents().into_iter().find(|a| a.id == id)
 }
 
 pub fn home_dir() -> Result<PathBuf, String> {
@@ -57,7 +161,7 @@ impl Agent {
         // them but `to_string_lossy()` may preserve the `/`. Normalize to the
         // platform's native separator so displayed paths and `explorer` args
         // are Windows-style (`C:\Users\...\.claude\skills`).
-        let joined = home_dir()?.join(self.rel_dir);
+        let joined = home_dir()?.join(&self.rel_dir);
         Ok(native_path(&joined))
     }
 }
@@ -142,8 +246,8 @@ fn migrate_hub_in(home: &Path) {
     }
 
     // Rewrite agent links that still point into the old root.
-    for agent in AGENTS {
-        let dir = home.join(agent.rel_dir);
+    for agent in load_agents() {
+        let dir = home.join(&agent.rel_dir);
         let entries = match std::fs::read_dir(&dir) {
             Ok(e) => e,
             Err(_) => continue,

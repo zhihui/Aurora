@@ -1,21 +1,50 @@
 import { useEffect, useState } from "react";
-import { IconFolderOpen, IconFolderPlus, IconKey } from "@tabler/icons-react";
+import {
+  IconFolderOpen,
+  IconFolderPlus,
+  IconKey,
+  IconPlus,
+  IconTrash,
+  IconLoader2,
+} from "@tabler/icons-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { PageHeader, Mono } from "@/components/PageHeader";
 import { cn } from "@/lib/utils";
 import {
   listAgentDirs,
   createAgentDir,
+  listCandidateAgents,
+  addAgent,
+  removeAgent,
   openPath,
   getLlmConfig,
   setLlmConfig,
   type AgentDirInfo,
+  type CandidateAgent,
 } from "@/lib/api";
 
-export function Settings() {
+export function Settings({ onAgentsChanged }: { onAgentsChanged?: () => void }) {
   const [dirs, setDirs] = useState<AgentDirInfo[] | null>(null);
 
   // ── LLM config ──
@@ -25,6 +54,13 @@ export function Settings() {
   const [hasKey, setHasKey] = useState(false);
   const [llmLoaded, setLlmLoaded] = useState(false);
   const [savingLlm, setSavingLlm] = useState(false);
+
+  // ── add / remove agent ──
+  const [addOpen, setAddOpen] = useState(false);
+  const [candidates, setCandidates] = useState<CandidateAgent[] | null>(null);
+  const [pickedId, setPickedId] = useState<string | null>(null);
+  const [agentBusy, setAgentBusy] = useState(false);
+  const [pendingRemove, setPendingRemove] = useState<AgentDirInfo | null>(null);
 
   async function refresh() {
     try {
@@ -75,6 +111,49 @@ export function Settings() {
     }
   }
 
+  async function openAdd() {
+    setPickedId(null);
+    setAddOpen(true);
+    try {
+      setCandidates(await listCandidateAgents());
+    } catch (e) {
+      toast.error(String(e));
+    }
+  }
+
+  async function onAdd() {
+    if (!pickedId) return;
+    setAgentBusy(true);
+    try {
+      await addAgent(pickedId);
+      toast.success("已添加 agent");
+      setAddOpen(false);
+      await refresh();
+      onAgentsChanged?.();
+    } catch (e) {
+      toast.error(String(e));
+    } finally {
+      setAgentBusy(false);
+    }
+  }
+
+  async function onRemove() {
+    if (!pendingRemove) return;
+    const d = pendingRemove;
+    setPendingRemove(null);
+    setAgentBusy(true);
+    try {
+      await removeAgent(d.id);
+      toast.success(`已移除 ${d.name}`);
+      await refresh();
+      onAgentsChanged?.();
+    } catch (e) {
+      toast.error(String(e));
+    } finally {
+      setAgentBusy(false);
+    }
+  }
+
   function initials(name: string) {
     return name.replace(/[^A-Za-z一-龥]/g, "").slice(0, 2) || "··";
   }
@@ -86,8 +165,14 @@ export function Settings() {
       </PageHeader>
 
       <div className="flex-1 overflow-auto px-4 pb-6 pt-4">
-        <div className="text-muted-foreground px-2 pb-1 text-[10.5px] font-semibold uppercase tracking-wider">
-          Agent 技能目录
+        <div className="text-muted-foreground flex items-center justify-between pb-1">
+          <span className="px-2 text-[10.5px] font-semibold uppercase tracking-wider">
+            Agent 技能目录
+          </span>
+          <Button onClick={openAdd} disabled={agentBusy}>
+            <IconPlus data-icon="inline-start" />
+            添加 Agent
+          </Button>
         </div>
 
         <div className="flex flex-col gap-2">
@@ -136,6 +221,15 @@ export function Settings() {
                       <IconFolderPlus data-icon="inline-start" />
                       创建目录
                     </Button>
+                  )}
+                  {d.removable && (
+                    <button
+                      onClick={() => setPendingRemove(d)}
+                      title="移除 agent"
+                      className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive grid size-[30px] shrink-0 place-items-center rounded-md transition-colors"
+                    >
+                      <IconTrash className="size-[15px]" />
+                    </button>
                   )}
                 </div>
               ))}
@@ -236,7 +330,7 @@ export function Settings() {
                   />
                   {hasKey ? "密钥已保存" : "尚未保存密钥"}
                 </span>
-                <Button size="sm" onClick={onSaveLlm} disabled={savingLlm}>
+                <Button onClick={onSaveLlm} disabled={savingLlm}>
                   {savingLlm ? "保存中…" : "保存配置"}
                 </Button>
               </div>
@@ -244,6 +338,89 @@ export function Settings() {
           )}
         </div>
       </div>
+
+      {/* ── add agent dialog ── */}
+      <Dialog open={addOpen} onOpenChange={(o) => !agentBusy && setAddOpen(o)}>
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle>添加 Agent</DialogTitle>
+            <DialogDescription>
+              选择一个预设 agent，将自动创建其技能目录。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-1.5">
+            {candidates === null ? (
+              <div className="text-muted-foreground py-6 text-center text-[12.5px]">
+                加载中…
+              </div>
+            ) : candidates.length === 0 ? (
+              <div className="text-muted-foreground py-6 text-center text-[12.5px]">
+                已添加全部预设 agent。
+              </div>
+            ) : (
+              candidates.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setPickedId(c.id)}
+                  className={cn(
+                    "border-border flex items-center gap-3 rounded-lg border p-2.5 text-left transition-colors",
+                    pickedId === c.id
+                      ? "border-primary/40 bg-primary/5"
+                      : "hover:bg-foreground/[0.04]",
+                  )}
+                >
+                  <div
+                    className="grid size-[28px] shrink-0 place-items-center rounded-md text-[11px] font-bold text-white"
+                    style={{ background: c.color }}
+                  >
+                    {initials(c.name)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] font-semibold">{c.name}</div>
+                    <div className="text-muted-foreground truncate font-mono text-[11px]">
+                      ~/{c.rel_dir}
+                    </div>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddOpen(false)} disabled={agentBusy}>
+              取消
+            </Button>
+            <Button onClick={onAdd} disabled={agentBusy || !pickedId}>
+              {agentBusy ? <IconLoader2 className="animate-spin" data-icon="inline-start" /> : null}
+              添加
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── remove agent confirm ── */}
+      <AlertDialog
+        open={pendingRemove !== null}
+        onOpenChange={(o) => !o && setPendingRemove(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>移除 {pendingRemove?.name}？</AlertDialogTitle>
+            <AlertDialogDescription>
+              将清理该 agent 技能目录里指向技能中心的软链接（真实目录与外部链接保留）。
+              该 agent 会从技能中心、技能包、Agent 技能页消失。操作不可撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={onRemove}
+              className={cn("bg-destructive text-white hover:bg-destructive/90")}
+            >
+              移除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
