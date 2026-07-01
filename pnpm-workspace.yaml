@@ -1,0 +1,7 @@
+verifyDepsBeforeRun: false
+ignoredBuiltDependencies:
+  - esbuild
+overrides:
+  zod: 3.25.76
+allowBuilds:
+  esbuild: set this to true or false

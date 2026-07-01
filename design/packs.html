@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aurora — 技能包</title>
+<link rel="stylesheet" href="shared.css" />
+</head>
+<body>
+  <div class="titlebar"></div>
+  <div class="traffic"><i class="r"></i><i class="y"></i><i class="g"></i></div>
+
+  <div class="window">
+    <aside class="sidebar">
+      <div class="brand"><div class="glyph"><span></span></div><b>Aurora</b></div>
+      <nav>
+        <a class="nav-item" href="mockup.html">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          <span class="txt">技能中心</span><span class="ct">12</span>
+        </a>
+        <a class="nav-item active" href="packs.html">
+          <svg viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg>
+          <span class="txt">技能包</span><span class="ct">3</span>
+        </a>
+        <a class="nav-item" href="agent-skills.html">
+          <svg viewBox="0 0 24 24"><rect x="4" y="9" width="16" height="11" rx="3"/><path d="M12 9V5"/><circle cx="12" cy="4" r="1.2"/><path d="M9 14h.01M15 14h.01"/><path d="M2 14v2M22 14v2"/></svg>
+          <span class="txt">Agent 技能</span>
+        </a>
+        <a class="nav-item" href="settings.html">
+          <svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span class="txt">设置</span>
+        </a>
+      </nav>
+      <div class="spacer"></div>
+      <div class="agent-rail">
+        <div class="nav-label">已连接 Agent</div>
+        <div class="agent-chip"><span class="dot" style="background:#D97757"></span>Claude Code</div>
+        <div class="agent-chip"><span class="dot" style="background:#10A37F"></span>Codex</div>
+        <div class="agent-chip"><span class="dot" style="background:#6366F1"></span>Kimi Code</div>
+        <div class="agent-chip"><span class="dot" style="background:#EAB308"></span>Opencode</div>
+        <div class="agent-chip"><span class="dot" style="background:#64748B"></span>通用 Agent</div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="topbar">
+        <h1>技能包</h1>
+        <p>把常用技能打包，一次性分配给 agent · 定义存于 <span class="mono">~/.aurora/packs.json</span></p>
+      </div>
+
+      <div class="toolbar">
+        <div class="search">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input placeholder="搜索技能包…" />
+        </div>
+        <button class="btn primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>新建技能包</button>
+      </div>
+
+      <div class="list-hint">点击包底部的 agent 徽标，将包内全部技能一次性软链接到该 agent</div>
+      <div class="list">
+
+        <div class="pack">
+          <div class="head">
+            <span class="name">文档处理套件</span>
+            <span class="ct">3 个技能</span>
+            <div class="actions">
+              <button class="icon-btn" title="重命名"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+              <button class="icon-btn danger" title="删除技能包"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+            </div>
+          </div>
+          <div class="desc">PDF 抽取、网页清洗、表格解析，处理文档相关任务的常用组合。</div>
+          <div class="chips">
+            <span class="chip"><span class="mono">pdf-extract</span><span class="rm" title="移出">✕</span></span>
+            <span class="chip"><span class="mono">web-scraper</span><span class="rm" title="移出">✕</span></span>
+            <span class="chip"><span class="mono">table-parser</span><span class="rm" title="移出">✕</span></span>
+            <span class="chip add">+ 添加技能</span>
+          </div>
+          <div class="assign-row">
+            <span class="lbl">分配给：</span>
+            <div class="links">
+              <span class="lk on"><span class="dot" style="background:#D97757"></span>Claude</span>
+              <span class="lk on"><span class="dot" style="background:#10A37F"></span>Codex</span>
+              <span class="lk off"><span class="dot" style="background:#6366F1"></span>Kimi</span>
+              <span class="lk off"><span class="dot" style="background:#EAB308"></span>Opencode</span>
+              <span class="lk off"><span class="dot" style="background:#64748B"></span>通用</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pack">
+          <div class="head">
+            <span class="name">Git 工作流</span>
+            <span class="ct">2 个技能</span>
+            <div class="actions">
+              <button class="icon-btn" title="重命名"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+              <button class="icon-btn danger" title="删除技能包"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+            </div>
+          </div>
+          <div class="desc">提交信息生成与分支审查，日常 git 操作助手。</div>
+          <div class="chips">
+            <span class="chip"><span class="mono">git-commit-helper</span><span class="rm" title="移出">✕</span></span>
+            <span class="chip"><span class="mono">pr-reviewer</span><span class="rm" title="移出">✕</span></span>
+            <span class="chip add">+ 添加技能</span>
+          </div>
+          <div class="assign-row">
+            <span class="lbl">分配给：</span>
+            <div class="links">
+              <span class="lk on"><span class="dot" style="background:#D97757"></span>Claude</span>
+              <span class="lk off"><span class="dot" style="background:#10A37F"></span>Codex</span>
+              <span class="lk off"><span class="dot" style="background:#6366F1"></span>Kimi</span>
+              <span class="lk off"><span class="dot" style="background:#EAB308"></span>Opencode</span>
+              <span class="lk off"><span class="dot" style="background:#64748B"></span>通用</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pack">
+          <div class="head">
+            <span class="name">研究助手</span>
+            <span class="ct">0 个技能</span>
+            <div class="actions">
+              <button class="icon-btn" title="重命名"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+              <button class="icon-btn danger" title="删除技能包"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+            </div>
+          </div>
+          <div class="desc">空技能包 — 添加技能后即可分配。</div>
+          <div class="chips">
+            <span class="chip add">+ 添加技能</span>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script>
+    document.querySelectorAll('.assign-row .lk').forEach(lk=>lk.addEventListener('click',()=>{lk.classList.toggle('on');lk.classList.toggle('off');}));
+  </script>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aurora — 设置</title>
+<link rel="stylesheet" href="shared.css" />
+</head>
+<body>
+  <div class="titlebar"></div>
+  <div class="traffic"><i class="r"></i><i class="y"></i><i class="g"></i></div>
+
+  <div class="window">
+    <aside class="sidebar">
+      <div class="brand"><div class="glyph"><span></span></div><b>Aurora</b></div>
+      <nav>
+        <a class="nav-item" href="mockup.html">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          <span class="txt">技能中心</span><span class="ct">12</span>
+        </a>
+        <a class="nav-item" href="packs.html">
+          <svg viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg>
+          <span class="txt">技能包</span><span class="ct">3</span>
+        </a>
+        <a class="nav-item" href="agent-skills.html">
+          <svg viewBox="0 0 24 24"><rect x="4" y="9" width="16" height="11" rx="3"/><path d="M12 9V5"/><circle cx="12" cy="4" r="1.2"/><path d="M9 14h.01M15 14h.01"/><path d="M2 14v2M22 14v2"/></svg>
+          <span class="txt">Agent 技能</span>
+        </a>
+        <a class="nav-item active" href="settings.html">
+          <svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span class="txt">设置</span>
+        </a>
+      </nav>
+      <div class="spacer"></div>
+      <div class="agent-rail">
+        <div class="nav-label">已连接 Agent</div>
+        <div class="agent-chip"><span class="dot" style="background:#D97757"></span>Claude Code</div>
+        <div class="agent-chip"><span class="dot" style="background:#10A37F"></span>Codex</div>
+        <div class="agent-chip"><span class="dot" style="background:#6366F1"></span>Kimi Code</div>
+        <div class="agent-chip"><span class="dot" style="background:#EAB308"></span>Opencode</div>
+        <div class="agent-chip"><span class="dot" style="background:#64748B"></span>通用 Agent</div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="topbar">
+        <h1>设置</h1>
+        <p>各 agent 的技能目录位置 · Aurora 数据存于 <span class="mono">~/.aurora/</span></p>
+      </div>
+
+      <div class="list" style="padding-top:16px">
+        <div class="nav-label" style="padding-left:24px">Agent 技能目录</div>
+
+        <div class="setting">
+          <div class="ico" style="background:#D97757">CC</div>
+          <div class="meta">
+            <div class="name">Claude Code</div>
+            <div class="path mono">~/.claude/skills/</div>
+          </div>
+          <span class="status ok"><span style="width:6px;height:6px;border-radius:50%;background:var(--ok);display:inline-block"></span>已就绪 · 2 个技能</span>
+          <button class="btn">在 Finder 中打开</button>
+        </div>
+
+        <div class="setting">
+          <div class="ico" style="background:#10A37F">Cx</div>
+          <div class="meta">
+            <div class="name">Codex</div>
+            <div class="path mono">~/.codex/skills/</div>
+          </div>
+          <span class="status ok"><span style="width:6px;height:6px;border-radius:50%;background:var(--ok);display:inline-block"></span>已就绪 · 1 个技能</span>
+          <button class="btn">在 Finder 中打开</button>
+        </div>
+
+        <div class="setting">
+          <div class="ico" style="background:#6366F1">Ki</div>
+          <div class="meta">
+            <div class="name">Kimi Code</div>
+            <div class="path mono">~/.kimi-code/skills/</div>
+          </div>
+          <span class="status ok"><span style="width:6px;height:6px;border-radius:50%;background:var(--ok);display:inline-block"></span>已就绪 · 1 个技能</span>
+          <button class="btn">在 Finder 中打开</button>
+        </div>
+
+        <div class="setting">
+          <div class="ico" style="background:#EAB308">Op</div>
+          <div class="meta">
+            <div class="name">Opencode</div>
+            <div class="path mono">~/.config/opencode/skills/</div>
+          </div>
+          <span class="status missing">目录不存在</span>
+          <button class="btn">创建目录</button>
+        </div>
+
+        <div class="setting">
+          <div class="ico" style="background:#64748B">通</div>
+          <div class="meta">
+            <div class="name">通用 Agent</div>
+            <div class="path mono">~/.agents/skills/</div>
+          </div>
+          <span class="status missing">目录不存在</span>
+          <button class="btn">创建目录</button>
+        </div>
+
+        <div class="nav-label" style="padding-left:24px;padding-top:18px">数据目录</div>
+        <div class="setting">
+          <div class="ico" style="background:var(--iris)">AU</div>
+          <div class="meta">
+            <div class="name">Aurora 数据</div>
+            <div class="path mono">~/.aurora/  · skills/ · packs.json · config.json</div>
+          </div>
+          <span class="status ok"><span style="width:6px;height:6px;border-radius:50%;background:var(--ok);display:inline-block"></span>已就绪</span>
+          <button class="btn">在 Finder 中打开</button>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
