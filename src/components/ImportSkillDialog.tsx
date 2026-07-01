@@ -4,6 +4,7 @@ import {
   IconLink,
   IconFolder,
   IconClipboard,
+  IconTerminal,
   IconLoader2,
   IconCheck,
   IconAlertTriangle,
@@ -30,11 +31,46 @@ import {
   type ParsedImport,
 } from "@/lib/api";
 
-type Source = "github" | "url" | "local" | "paste";
+type Source = "github" | "cmd" | "url" | "local" | "paste";
 type Sel = { selected: boolean; name: string };
+
+/// Parse a GitHub input that may be a raw URL, an `owner/repo` shorthand, or a
+/// `npx skills add ... --skill <name>` command line. Returns the cleaned repo
+/// reference (URL or owner/repo) to send to the backend, plus an optional skill
+/// name filter requested via `--skill`.
+///
+/// Recognized forms:
+///   https://github.com/owner/repo[/tree/<branch>/<subpath>]
+///   owner/repo
+///   npx skills add <either-of-above> [--skill <name>]
+///   npx skills add <either-of-above> [--skill=<name>]
+function parseGithubInput(raw: string): { ref: string; skill: string | null } {
+  const s = raw.trim();
+  if (!s) return { ref: "", skill: null };
+
+  // Extract --skill <name>  or  --skill=<name>  (anywhere in the input).
+  let skill: string | null = null;
+  const eq = s.match(/--skill=(\S+)/);
+  const sp = s.match(/--skill\s+(\S+)/);
+  const m = eq || sp;
+  if (m) skill = m[1];
+
+  // Strip an optional `npx skills add` (and any `npx <pkg> <add|install>`) prefix.
+  let rest = s.replace(/^npx\s+\S+(?:\s+(?:add|install))?\s+/i, "").trim();
+
+  // Drop any remaining flags / extra tokens after the first whitespace.
+  // The repo reference itself contains no spaces, so the first token is it.
+  rest = rest.split(/\s+/)[0] ?? "";
+
+  // Remove a trailing .git for cleanliness (backend tolerates it too).
+  if (rest.endsWith(".git")) rest = rest.slice(0, -4);
+
+  return { ref: rest, skill };
+}
 
 const SOURCES: { id: Source; label: string; sub: string; icon: typeof IconLink }[] = [
   { id: "github", label: "GitHub", sub: "仓库 / 子目录", icon: IconBrandGithub },
+  { id: "cmd", label: "命令行", sub: "npx skills add", icon: IconTerminal },
   { id: "url", label: "链接 URL", sub: "SKILL.md / zip", icon: IconLink },
   { id: "local", label: "本地", sub: "文件夹 / 压缩包", icon: IconFolder },
   { id: "paste", label: "粘贴 / 新建", sub: "直接写 SKILL.md", icon: IconClipboard },
@@ -54,6 +90,7 @@ export function ImportSkillDialog({
   // source inputs
   const [ghLink, setGhLink] = useState("");
   const [ghBranch, setGhBranch] = useState("");
+  const [cmdInput, setCmdInput] = useState("");
   const [url, setUrl] = useState("");
   const [localPath, setLocalPath] = useState("");
   const [pasteName, setPasteName] = useState("");
@@ -77,6 +114,7 @@ export function ImportSkillDialog({
       setSource("github");
       setGhLink("");
       setGhBranch("");
+      setCmdInput("");
       setUrl("");
       setLocalPath("");
       setPasteName("");
@@ -108,6 +146,17 @@ export function ImportSkillDialog({
       if (source === "github") {
         if (!ghLink.trim()) throw "请输入 GitHub 链接";
         p = await parseGithubImport(ghLink.trim(), ghBranch.trim() || null);
+      } else if (source === "cmd") {
+        const { ref, skill } = parseGithubInput(cmdInput);
+        if (!ref) throw "请输入 skills add 命令";
+        p = await parseGithubImport(ref, null);
+        if (skill) {
+          // `--skill <name>` requested: keep only the matching skill.
+          p = { ...p, skills: p.skills.filter((s) => s.name === skill) };
+          if (p.skills.length === 0) {
+            throw `仓库中未找到技能：${skill}`;
+          }
+        }
       } else if (source === "url") {
         if (!url.trim()) throw "请输入链接";
         p = await parseUrlImport(url.trim());
@@ -272,6 +321,31 @@ export function ImportSkillDialog({
                     <code className="font-mono">.../tree/&lt;分支&gt;/&lt;子目录&gt;</code> ·{" "}
                     <code className="font-mono">.git</code> 地址。解析后列出含 SKILL.md 的目录供勾选。
                   </p>
+                </>
+              )}
+
+              {source === "cmd" && (
+                <>
+                  <p className="text-muted-foreground text-[11px] leading-relaxed select-none">
+                    粘贴 <code className="font-mono">npx skills add &lt;repo&gt; [--skill &lt;name&gt;]</code>{" "}
+                    或直接 <code className="font-mono">owner/repo</code>。带{" "}
+                    <code className="font-mono">--skill</code> 时只导入该指定技能。
+                  </p>
+                  <Field label="skills add 命令">
+                    <textarea
+                      value={cmdInput}
+                      onChange={(e) => setCmdInput(e.target.value)}
+                      placeholder="npx skills add obra/superpowers --skill brainstorming"
+                      spellCheck={false}
+                      className="border-input bg-background focus-visible:ring-ring h-[88px] w-full resize-none rounded-md border px-3 py-2 font-mono text-[12px] leading-relaxed focus-visible:outline-none focus-visible:ring-2"
+                    />
+                  </Field>
+                  <div className="flex justify-end">
+                    <Button onClick={runParse} disabled={busy}>
+                      {busy ? <IconLoader2 className="animate-spin" data-icon="inline-start" /> : null}
+                      解析
+                    </Button>
+                  </div>
                 </>
               )}
 

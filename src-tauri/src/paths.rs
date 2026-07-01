@@ -53,7 +53,22 @@ pub fn home_dir() -> Result<PathBuf, String> {
 
 impl Agent {
     pub fn skills_dir(&self) -> Result<PathBuf, String> {
-        Ok(home_dir()?.join(self.rel_dir))
+        // `rel_dir` uses forward slashes; on Windows `PathBuf::join` accepts
+        // them but `to_string_lossy()` may preserve the `/`. Normalize to the
+        // platform's native separator so displayed paths and `explorer` args
+        // are Windows-style (`C:\Users\...\.claude\skills`).
+        let joined = home_dir()?.join(self.rel_dir);
+        Ok(native_path(&joined))
+    }
+}
+
+/// Render a path with the platform's native separator. On Windows this turns
+/// any `/` into `\`; elsewhere it leaves the path as-is.
+fn native_path(p: &Path) -> PathBuf {
+    if cfg!(target_os = "windows") {
+        PathBuf::from(p.to_string_lossy().replace('/', "\\"))
+    } else {
+        p.to_path_buf()
     }
 }
 
