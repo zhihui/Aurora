@@ -12,6 +12,11 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: true
 
+# The default GITHUB_TOKEN is read-only for releases; grant write so
+# tauri-action can create the draft release and upload artifacts.
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
