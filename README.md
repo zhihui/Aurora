@@ -1,127 +1,109 @@
 # Aurora
 
-A desktop app for managing skills across AI agents (Claude Code, Codex, Kimi Code, Opencode, and generic agents). Manage skills centrally, assign them to agents via symlinks/junctions, bundle skills into packs, and import external skills.
+> 统一管理 AI agent 技能的桌面应用 —— 集中存储、打包、分配,跨 Claude Code / Codex / Kimi Code / Opencode 等 agent。
 
-## Features
+![release](https://img.shields.io/github/v/release/zhihui/Aurora?label=release)
+![platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-blue)
+![license](https://img.shields.io/badge/license-MIT-green)
+![tauri](https://img.shields.io/badge/Tauri-2-orange)
 
-- **技能中心**：所有技能的中央仓库，每个技能含 SKILL.md 说明
-- **技能包**：将常用技能打包为包，一键分配到多个 agent
-- **Agent 技能**：按 agent 查看已分配的技能，可导入外部技能到中心统一管理
-- **跨平台链接**：macOS/Linux 使用符号链接，Windows 使用 junction（无需管理员/开发者模式）
-- **保护机制**：删除技能时只移除技能中心创建的链接，绝不触碰真实目录和外部链接
+<p align="center">
+  <img src="screenshots/技能中心.png" width="720" alt="Aurora 主界面">
+</p>
 
-## Develop
+## ✨ 功能特性
+
+- **技能中心**:集中管理所有技能,每个含 `SKILL.md`。支持搜索、原文/中文切换查看(按需机翻并缓存)、删除,以及从 GitHub 仓库 / 任意 URL / 本地目录 / 粘贴 Markdown 四种方式导入
+- **技能包**:把多个技能打包,一键分配给多个 agent;包内增删技能时,已分配的 agent 自动同步(加技能即建软链接,删技能即清软链接,且不误删其它包共享的同名链接)
+- **Agent 技能**:按 agent 查看其技能,区分「技能中心软链接 / 真实目录 / 外部软链接」三种来源;删除只清技能中心创建的软链接,真实目录与外部链接受保护;外部技能可一键导入中心
+- **模型中心**:管理 provider(端点 / 密钥 / 多模型)与各 agent 的翻译模型 / 对话模型配置,密钥只存不显
+- **跨平台链接**:macOS/Linux 用符号链接,Windows 用 junction(无需管理员或开发者模式)
+
+## 📸 界面预览
+
+| 技能中心 | 技能包 |
+|---|---|
+| <img src="screenshots/技能中心.png" width="360"> | <img src="screenshots/技能包.png" width="360"> |
+
+| Agent 技能 | 模型中心 |
+|---|---|
+| <img src="screenshots/Agent 技能.png" width="360"> | <img src="screenshots/模型中心.png" width="360"> |
+
+| Agent 模型 |
+|---|
+| <img src="screenshots/Agent 模型.png" width="360"> |
+
+## 📥 下载安装
+
+前往 [Releases](https://github.com/zhihui/Aurora/releases) 下载对应平台的安装包:
+
+| 平台 | 安装包 |
+|------|--------|
+| macOS(Apple Silicon / Intel) | `.dmg` |
+| Windows | `.msi` / `.exe` |
+| Linux | `.deb` / `.AppImage` |
+
+> 也可从源码构建,见下方「开发」。
+
+## 🚀 快速开始
+
+1. 启动 Aurora,在「设置」中确认或添加你的 agent
+2. 在「技能中心」通过 GitHub / URL / 本地导入技能,或直接粘贴 Markdown 新建
+3. 点击技能卡片上的 agent 徽标,把技能以软链接形式分配给 agent
+4. 或用「技能包」打包多个技能,一键分配给多个 agent
+
+## 🤖 支持的 Agents
+
+| Agent | 技能目录 |
+|-------|----------|
+| Claude Code | `~/.claude/skills/` |
+| Codex | `~/.codex/skills/` |
+| Kimi Code | `~/.kimi-code/skills/` |
+| Opencode | `~/.config/opencode/skills/` |
+| 通用 Agent | `~/.agents/skills/` |
+
+## 📁 数据位置
+
+所有数据存于 `~/.aurora/`:
+
+| 路径 | 说明 |
+|------|------|
+| `skills/<name>/` | 技能中心 |
+| `packs.json` | 技能包配置 |
+| `config.json` | 应用配置 |
+| `cache/` | 导入暂存 / 翻译缓存 / 更新检查缓存 |
+
+## 🛠 开发
+
+**前置**:Node.js 20+、pnpm、Rust(stable),以及各平台系统依赖:
+
+<details>
+<summary>各平台依赖</summary>
+
+- **macOS**:`xcode-select --install`
+- **Windows**:[Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/)(含 "Desktop development with C++" 工作负载,无需管理员/开发者模式)
+- **Linux**(Debian/Ubuntu):
+  ```bash
+  sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libayatana-appindicator3-dev librsvg2-dev
+  ```
+
+</details>
 
 ```bash
-# Install dependencies
-pnpm install
+pnpm install        # 安装依赖
+pnpm tauri dev      # 开发(前端热更新,Rust 改动自动重编译)
+pnpm tauri build    # 生产构建(产物在 src-tauri/target/release/bundle/)
 ```
 
-### Dev Server
+## 📦 发版
+
+推送 `v*` 标签触发 [`.github/workflows/release.yml`](.github/workflows/release.yml):macOS(aarch64 + x86_64)、Linux、Windows 四平台并行构建,产物上传到 GitHub Release(草稿态,手动发布)。
 
 ```bash
-pnpm tauri dev
+git tag v0.1.6
+git push origin v0.1.6
 ```
 
-This launches a Vite dev server + the Rust backend. Changes to frontend code hot-reload; Rust changes trigger a recompile.
+## 📄 License
 
-## Build
-
-Builds are platform-specific — run the build command on each target platform.
-
-### Prerequisites
-
-- **Node.js 20+** + **pnpm 8+**
-- **Rust 1.70+** (via `rustup`)
-
-#### macOS
-- Xcode command line tools: `xcode-select --install`
-
-#### Windows
-- [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) with the "Desktop development with C++" workload
-- **No admin/Developer Mode required** — Windows builds use junctions instead of symlinks
-
-#### Linux
-```bash
-# Debian/Ubuntu
-sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libayatana-appindicator3-dev librsvg2-dev
-```
-
-### Production Build
-
-```bash
-pnpm tauri build
-```
-
-Outputs per platform:
-- **macOS**: `src-tauri/target/release/bundle/dmg/*.dmg` + `.app`
-- **Windows**: `src-tauri/target/release/bundle/msi/*.msi`
-- **Linux**: `src-tauri/target/release/bundle/deb/*.deb` + `.AppImage`
-
-### Signing & Notarization (macOS)
-
-Add to `tauri.conf.json` (fill in your own team ID / bundle ID):
-
-```json
-{
-  "app": {
-    "identifier": "com.your-domain.aurora",
-    "windows": [{
-      "title": "Aurora",
-      "macOSPrivateKey": "Developer ID Application: Your Name (TEAMID)"
-    }]
-  }
-}
-```
-
-Then build with:
-```bash
-APPLE_ID=your@apple.com APPLE_PASSWORD=app-specific-password APPLE_TEAM_ID=TEAMID pnpm tauri build
-```
-
-## Project Structure
-
-```
-├── src/                      # Frontend (React + TypeScript)
-│   ├── components/
-│   │   └── Sidebar.tsx      # 左侧导航
-│   ├── pages/
-│   │   ├── SkillsCenter.tsx # 技能中心
-│   │   ├── Packs.tsx        # 技能包
-│   │   ├── AgentSkills.tsx # Agent 技能
-│   │   └── Settings.tsx     # 设置
-│   └── lib/
-│       ├── api.ts           # Tauri 命令调用
-│       └── utils.ts
-├── src-tauri/                # Rust 后端
-│   ├── src/
-│   │   ├── paths.rs         # 路径解析 + 跨平台链接检测
-│   │   ├── meta.rs         # SKILL.md 解析
-│   │   ├── packs.rs         # packs.json 读写
-│   │   └── commands.rs      # Tauri 命令
-│   ├── icons/               # 应用图标
-│   └── tauri.conf.json
-├── icon.png                  # 应用图标源文件
-└── public/aurora-logo.png # 菜单栏 Logo
-```
-
-## Data Locations
-
-- **技能中心**：`~/.aurora/skills/<skill-name>/`
-- **技能包配置**：`~/.aurora/packs.json`
-- **Agent 技能目录**：
-  - Claude Code: `~/.claude/skills/`
-  - Codex: `~/.codex/skills/`
-  - Kimi Code: `~/.kimi-code/skills/`
-  - Opencode: `~/.config/opencode/skills/`
-  - 通用 Agent: `~/.agents/skills/`
-
-## Cross-Platform Notes
-
-| Aspect | macOS | Linux | Windows |
-|--------|-------|-------|---------|
-| Links | Unix symlinks | Unix symlinks | Junctions (no elevation needed) |
-| Title Bar | Overlay + draggable top strip | Native | Native |
-| Open dir | `open` | `xdg-open` | `explorer` |
-| Icon format | `.icns` | set in `.desktop` | `.ico` |
-
+[MIT](LICENSE)
