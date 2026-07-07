@@ -5,8 +5,11 @@ import {
   IconSettings,
   IconServer,
   IconCpu2,
+  IconDownload,
 } from "@tabler/icons-react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { cn } from "@/lib/utils";
+import type { UpdateInfo } from "@/lib/api";
 
 export type View =
   | "skills"
@@ -38,10 +41,12 @@ export function Sidebar({
   view,
   onChange,
   topInset = 0,
+  update,
 }: {
   view: View;
   onChange: (v: View) => void;
   topInset?: number;
+  update?: UpdateInfo | null;
 }) {
   return (
     <aside
@@ -79,14 +84,14 @@ export function Sidebar({
 
       <div className="flex-1" />
 
-      {/* settings — pinned at the bottom, icon only */}
-      <div className="flex px-2.5 pb-3 max-[720px]:justify-center">
+      {/* bottom row: settings (left, original spot) + update link (right) */}
+      <div className="flex items-center gap-2 px-2.5 pb-3 max-[720px]:justify-center">
         <button
           onClick={() => onChange("settings")}
           title="设置"
           aria-label="设置"
           className={cn(
-            "grid size-9 place-items-center rounded-lg transition-colors",
+            "grid size-9 shrink-0 place-items-center rounded-lg transition-colors",
             view === "settings"
               ? "bg-foreground/[0.055] text-foreground/80"
               : "text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground/80",
@@ -94,6 +99,17 @@ export function Sidebar({
         >
           <IconSettings className="size-[18px]" stroke={1.8} />
         </button>
+        <div className="flex-1 max-[720px]:hidden" />
+        {update?.has_update && (
+          <button
+            onClick={() => openUrl(update.url)}
+            title={`发现新版本 ${update.latest}，点击前往下载`}
+            className="text-primary hover:underline underline-offset-2 inline-flex items-center gap-1.5 px-1.5 py-1 text-[12px] font-medium transition-colors max-[720px]:hidden"
+          >
+            <IconDownload className="size-[14px] shrink-0" stroke={1.8} />
+            <span>发现新版本 {update.latest}</span>
+          </button>
+        )}
       </div>
     </aside>
   );

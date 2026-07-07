@@ -201,6 +201,13 @@ pub fn config_file() -> Result<PathBuf, String> {
     Ok(hub_root()?.join("config.json"))
 }
 
+/// Cache directory: ~/.aurora/cache (created if missing).
+pub fn cache_dir() -> Result<PathBuf, String> {
+    let d = hub_root()?.join("cache");
+    std::fs::create_dir_all(&d).map_err(|e| format!("创建缓存目录失败: {e}"))?;
+    Ok(d)
+}
+
 /// Recreate a directory link (symlink on Unix, junction on Windows) at `link`
 /// pointing to `target`.
 fn make_dir_link(target: &Path, link: &Path) -> std::io::Result<()> {

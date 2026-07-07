@@ -1,6 +1,6 @@
 [package]
 name = "aurora"
-version = "0.1.3"
+version = "0.1.5"
 description = "Aurora — manage agent skills"
 authors = ["lizhihui"]
 edition = "2021"
@@ -18,7 +18,7 @@ tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 dirs = "6"
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "socks"] }
 tauri-plugin-dialog = "2"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 flate2 = "1"

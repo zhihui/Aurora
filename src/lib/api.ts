@@ -199,6 +199,16 @@ export const importSkill = (agent: string, name: string) =>
 // ─── misc ───
 export const openPath = (path: string) => invoke<void>("open_path", { path });
 
+// ─── update check ───
+export type UpdateInfo = {
+  has_update: boolean;
+  current: string;
+  latest: string;
+  url: string;
+  notes: string;
+};
+export const checkForUpdate = () => invoke<UpdateInfo>("check_for_update");
+
 // ─── llm config ───
 export const getLlmConfig = () => invoke<LlmConfig>("get_llm_config");
 export const setLlmConfig = (

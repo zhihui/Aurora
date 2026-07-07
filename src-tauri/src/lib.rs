@@ -59,6 +59,7 @@ pub fn run() {
             import_from_staging,
             cancel_import,
             create_skill_text,
+            check_for_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

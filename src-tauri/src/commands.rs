@@ -3,9 +3,10 @@ use crate::import::{self, ImportResult, ImportSelection, ParsedImport};
 use crate::meta::read_description;
 use crate::packs::{self, StoredPack};
 use crate::paths;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::path::{Path, PathBuf};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use toml_edit::{value as toml_value, Array as TomlArray, DocumentMut};
 
 /// Create a directory link in a cross-platform way.
@@ -2000,4 +2001,198 @@ pub fn open_path(path: String) -> Result<(), String> {
     };
     cmd.spawn().map_err(|e| format!("打开失败: {e}"))?;
     Ok(())
+}
+
+// ─────────────────────────── update check ───────────────────────────
+
+const GH_RELEASES_API: &str = "https://api.github.com/repos/zhihui/Aurora/releases/latest";
+const UPDATE_CACHE_FILE: &str = "update.json";
+const UPDATE_CACHE_TTL_SECS: u64 = 24 * 60 * 60;
+const UPDATE_NOTES_MAX: usize = 500;
+
+#[derive(Serialize)]
+pub struct UpdateInfo {
+    pub has_update: bool,
+    pub current: String,
+    pub latest: String,
+    pub url: String,
+    pub notes: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct UpdateCache {
+    checked_at: u64,
+    etag: Option<String>,
+    latest: String,
+    url: String,
+    notes: String,
+    has_update: bool,
+}
+
+/// Check GitHub Releases for a newer version than the running app. Anonymous
+/// request (no token) with a 24h local cache + ETag to stay well under the
+/// 60 req/hour/IP unauthenticated limit. Any error is surfaced as `Err` so the
+/// frontend can stay silent.
+#[tauri::command]
+pub async fn check_for_update() -> Result<UpdateInfo, String> {
+    let current = env!("CARGO_PKG_VERSION").to_string();
+    let cache_path = paths::cache_dir()?.join(UPDATE_CACHE_FILE);
+    let cached = read_update_cache(&cache_path);
+
+    // Serve from cache within the TTL — no network request at all.
+    if let Some(ref c) = cached {
+        if now_secs().saturating_sub(c.checked_at) < UPDATE_CACHE_TTL_SECS {
+            return Ok(UpdateInfo {
+                has_update: c.has_update,
+                current: current.clone(),
+                latest: c.latest.clone(),
+                url: c.url.clone(),
+                notes: c.notes.clone(),
+            });
+        }
+    }
+
+    let mut default_headers = reqwest::header::HeaderMap::new();
+    default_headers.insert(
+        reqwest::header::USER_AGENT,
+        reqwest::header::HeaderValue::from_str(&format!("Aurora/{current}"))
+            .map_err(|e| format!("无效 UA: {e}"))?,
+    );
+    let client = reqwest::Client::builder()
+        .default_headers(default_headers)
+        .timeout(Duration::from_secs(6))
+        .build()
+        .map_err(|e| format!("构建请求失败: {e}"))?;
+
+    let mut req = client.get(GH_RELEASES_API);
+    if let Some(ref c) = cached {
+        if let Some(ref etag) = c.etag {
+            req = req.header(reqwest::header::IF_NONE_MATCH, etag.as_str());
+        }
+    }
+
+    let resp = req.send().await.map_err(|e| format!("检查更新失败: {e}"))?;
+
+    let (latest, url, notes, new_etag) = if resp.status() == reqwest::StatusCode::NOT_MODIFIED {
+        // 304: release unchanged — reuse cached values, just refresh the timestamp.
+        let c = cached
+            .as_ref()
+            .ok_or_else(|| "缓存缺失但收到 304".to_string())?;
+        (c.latest.clone(), c.url.clone(), c.notes.clone(), c.etag.clone())
+    } else if !resp.status().is_success() {
+        return Err(format!("GitHub 返回状态 {}", resp.status()));
+    } else {
+        let etag = resp
+            .headers()
+            .get(reqwest::header::ETAG)
+            .and_then(|v| v.to_str().ok())
+            .map(|s| s.to_string());
+        let body = resp
+            .json::<serde_json::Value>()
+            .await
+            .map_err(|e| format!("解析响应失败: {e}"))?;
+        let tag = body["tag_name"].as_str().unwrap_or("").to_string();
+        let url = body["html_url"].as_str().unwrap_or("").to_string();
+        let notes = body["body"]
+            .as_str()
+            .unwrap_or("")
+            .chars()
+            .take(UPDATE_NOTES_MAX)
+            .collect::<String>();
+        (tag, url, notes, etag)
+    };
+
+    let has_update = is_newer(&latest, &current);
+    let info = UpdateInfo {
+        has_update,
+        current: current.clone(),
+        latest: latest.clone(),
+        url: url.clone(),
+        notes: notes.clone(),
+    };
+
+    // Persist cache (best-effort — a write failure must not block the result).
+    let _ = write_update_cache(
+        &cache_path,
+        &UpdateCache {
+            checked_at: now_secs(),
+            etag: new_etag,
+            latest,
+            url,
+            notes,
+            has_update,
+        },
+    );
+
+    Ok(info)
+}
+
+/// True when `latest` is a higher version than `current`. Both may carry a
+/// leading `v`. Numeric segments compare by value; non-numeric fall back to
+/// string comparison.
+fn is_newer(latest: &str, current: &str) -> bool {
+    compare_versions(latest.trim_start_matches('v'), current.trim_start_matches('v'))
+        == std::cmp::Ordering::Greater
+}
+
+fn compare_versions(a: &str, b: &str) -> std::cmp::Ordering {
+    let av: Vec<&str> = a.split('.').collect();
+    let bv: Vec<&str> = b.split('.').collect();
+    for i in 0..av.len().max(bv.len()) {
+        let sa = av.get(i).copied().unwrap_or("0");
+        let sb = bv.get(i).copied().unwrap_or("0");
+        let ord = match (sa.parse::<u64>(), sb.parse::<u64>()) {
+            (Ok(na), Ok(nb)) => na.cmp(&nb),
+            _ => sa.cmp(sb),
+        };
+        if ord != std::cmp::Ordering::Equal {
+            return ord;
+        }
+    }
+    std::cmp::Ordering::Equal
+}
+
+fn now_secs() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
+
+fn read_update_cache(path: &Path) -> Option<UpdateCache> {
+    let content = std::fs::read_to_string(path).ok()?;
+    serde_json::from_str(&content).ok()
+}
+
+fn write_update_cache(path: &Path, cache: &UpdateCache) -> Result<(), String> {
+    let json =
+        serde_json::to_string_pretty(cache).map_err(|e| format!("序列化缓存失败: {e}"))?;
+    std::fs::write(path, json).map_err(|e| format!("写入缓存失败: {e}"))
+}
+
+#[cfg(test)]
+mod update_tests {
+    use super::*;
+
+    #[test]
+    fn compare_numeric() {
+        assert_eq!(compare_versions("0.1.3", "0.1.3"), std::cmp::Ordering::Equal);
+        assert_eq!(compare_versions("0.1.4", "0.1.3"), std::cmp::Ordering::Greater);
+        assert_eq!(compare_versions("0.1.2", "0.1.3"), std::cmp::Ordering::Less);
+        assert_eq!(compare_versions("0.2.0", "0.1.9"), std::cmp::Ordering::Greater);
+        assert_eq!(compare_versions("1.0.0", "0.9.9"), std::cmp::Ordering::Greater);
+    }
+
+    #[test]
+    fn compare_unequal_length() {
+        assert_eq!(compare_versions("0.1", "0.1.0"), std::cmp::Ordering::Equal);
+        assert_eq!(compare_versions("0.1.0.1", "0.1.0"), std::cmp::Ordering::Greater);
+    }
+
+    #[test]
+    fn newer_strips_v_prefix() {
+        assert!(is_newer("v0.1.4", "0.1.3"));
+        assert!(!is_newer("v0.1.3", "0.1.3"));
+        assert!(!is_newer("v0.1.2", "0.1.3"));
+    }
 }

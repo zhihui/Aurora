@@ -7,11 +7,12 @@ import { AgentSkills } from "@/pages/AgentSkills";
 import { Models } from "@/pages/Models";
 import { AgentModels } from "@/pages/AgentModels";
 import { Settings } from "@/pages/Settings";
-import { listAgents, type AgentInfo } from "@/lib/api";
+import { listAgents, checkForUpdate, type AgentInfo, type UpdateInfo } from "@/lib/api";
 
 export default function App() {
   const [view, setView] = useState<View>("skills");
   const [agents, setAgents] = useState<AgentInfo[]>([]);
+  const [update, setUpdate] = useState<UpdateInfo | null>(null);
 
   // macOS uses an overlay title bar (traffic lights). Windows/Linux get a
   // native title bar, so no transparent drag strip / top inset there.
@@ -31,6 +32,13 @@ export default function App() {
     listAgents().then(setAgents).catch(() => setAgents([]));
   }, []);
 
+  // Check for a new release on launch; stay silent on any failure.
+  useEffect(() => {
+    checkForUpdate()
+      .then((u) => u.has_update && setUpdate(u))
+      .catch(() => {});
+  }, []);
+
   // Called by Settings after add/remove agent so the skills/packs/agent-skills
   // pages see the updated agent list without a full reload.
   const reloadAgents = () => {
@@ -45,10 +53,10 @@ export default function App() {
       )}
 
       <div className="bg-sidebar grid h-screen grid-cols-[232px_1fr] max-[720px]:grid-cols-[64px_1fr]">
-        <Sidebar view={view} onChange={setView} topInset={topInset} />
+        <Sidebar view={view} onChange={setView} topInset={topInset} update={update} />
         <main
           style={{ paddingTop: topInset }}
-          className="bg-background border-border flex min-w-0 flex-col overflow-hidden rounded-l-xl border-l"
+          className="bg-background border-border flex min-w-0 flex-col overflow-hidden border-l"
         >
           {view === "skills" && <SkillsCenter agents={agents} />}
           {view === "packs" && <Packs agents={agents} />}
