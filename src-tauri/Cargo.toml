@@ -1,6 +1,6 @@
 [package]
 name = "aurora"
-version = "0.1.5"
+version = "0.1.6"
 description = "Aurora — manage agent skills"
 authors = ["lizhihui"]
 edition = "2021"

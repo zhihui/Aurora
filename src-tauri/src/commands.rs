@@ -2026,7 +2026,6 @@ struct UpdateCache {
     latest: String,
     url: String,
     notes: String,
-    has_update: bool,
 }
 
 /// Check GitHub Releases for a newer version than the running app. Anonymous
@@ -2042,8 +2041,11 @@ pub async fn check_for_update() -> Result<UpdateInfo, String> {
     // Serve from cache within the TTL — no network request at all.
     if let Some(ref c) = cached {
         if now_secs().saturating_sub(c.checked_at) < UPDATE_CACHE_TTL_SECS {
+            // Recompute against the running version — the cached `has_update`
+            // may have been computed under a different `current` (e.g. after an
+            // upgrade), so never trust a stored boolean.
             return Ok(UpdateInfo {
-                has_update: c.has_update,
+                has_update: is_newer(&c.latest, &current),
                 current: current.clone(),
                 latest: c.latest.clone(),
                 url: c.url.clone(),
@@ -2120,7 +2122,6 @@ pub async fn check_for_update() -> Result<UpdateInfo, String> {
             latest,
             url,
             notes,
-            has_update,
         },
     );
 
