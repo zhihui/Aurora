@@ -65,9 +65,9 @@ jobs:
           cd dist
           ls -laR
           shopt -s nullglob globstar
-          # The update manifests and delta archives go to the release too:
-          # installed apps check the manifest of the latest release.
-          files=(**/*.dmg **/*.exe **/*.deb **/*.tar.gz **/update-*.json **/*.delta)
+          # Only the installers and the update files: **/*.exe would also
+          # catch the bare Aurora.exe.
+          files=(**/*.dmg **/*-setup-*.exe **/*.deb **/*.tar.gz **/update-*.json **/*.delta)
           echo "release files: ${files[@]}"
           if ! out=$(gh release create "${{ github.ref_name }}" "${files[@]}" --title "Aurora ${{ github.ref_name }}" --generate-notes 2>&1); then
             printf '### Release failed\n```\n%s\n```\n' "$out" >> "$GITHUB_STEP_SUMMARY"
