@@ -42,6 +42,27 @@ gofmt -w .              # 提交前格式化
 - 查框架 API 时读本地 pinned 源码：`go list -m -f '{{.Dir}}' github.com/egoist/mygo`，重点看 `ui/doc.go`、`ui/sidebar.go`、`ui/api_gen.go`、`ui/widgets.go` 和 `examples/vibrancy`。不要修改 module cache 里的文件。
 - 项目有 `.agents/skills/mygo-maintenance` 技能，改 UI 前遵循其中的生命周期/焦点/线程规范。
 
+## 发版（Release）
+
+仓库 <https://github.com/zhihui/Aurora>，CI 是 `.github/workflows/build.yml`（GitHub Actions）。**发版只需打 tag**：
+
+```sh
+# 1. 先把 mygo.json 里的 version 改成新版本号并提交
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+CI 流程：test（`CGO_ENABLED=0 go test ./...` + `mygo vet`）→ 三平台矩阵构建（`macos-latest` 出 `darwin/universal` 的 `.dmg`，`windows-latest` 出 `-setup-*.exe` 安装包，`ubuntu-latest` 出 `.deb` + `.tar.gz`）→ 仅 tag 推送时 release 任务创建 GitHub Release 并上传全部安装包。push 到 `main` 只构建发 artifact，不发 Release。
+
+**已踩过的坑（改工作流前先看）**：
+
+- `mygo build -platform <os>/<arch>` 的产物在 `build/<os>-<arch>/` **子目录**里（如 `build/darwin-universal/aurora-0.1.0.dmg`），收集安装包必须递归 glob（`**/*.dmg` 等），只 glob 顶层会得到空列表、创建出没有附件的 Release。
+- artifact 名不能含 `/`：`darwin/universal` 要用单独的 `slug`（`darwin-universal`）做 artifact 名。
+- release 任务里 `gh release create` 之前必须 `actions/checkout`，否则 gh 无法定位仓库。
+- 安装包之外还有裸二进制（`Aurora.exe`、`aurora`、`.app` 目录），发布只传安装包：dmg / setup exe / deb / tar.gz。
+- macOS 的 DMG 目前是 ad hoc 签名，用户首次打开要在「系统设置 → 隐私与安全性」放行；正式签名需在 `mygo.json` 配 `macos.signingIdentity`/`macos.notarize` 并在 CI 导入证书（未做）。
+- 版本号以 `mygo.json` 的 `version` 为准，tag 必须与它一致；tag 打错删掉重推即可（`git push origin :refs/tags/vX.Y.Z`），但 Release 已创建的话要先删 Release。
+
 ## 开发工作流（用户要求，务必遵守）
 
 1. **每次改完代码必须让用户看到运行中的应用**。平时用一个后台任务跑 `go tool mygo dev`（保存 .go 自动重建重启），改完确认日志最后一次是 `✓ Rebuilt`（中间的编译失败是分步编辑的过渡态，不用管）。会话重启后旧后台任务会失联：先 `pgrep -fl "Aurora Dev"` 杀掉残留进程，再重新后台启动 `go tool mygo dev`。
