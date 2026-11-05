@@ -241,10 +241,10 @@ func (a *app) sortSwitch(c *ui.Context) {
 	})
 }
 
-// updateButton is the header's 检查更新: still while a check or an
+// updateButton is the header's 更新技能: still while a check or an
 // update runs, and while the hub has no git skill to check.
 func (a *app) updateButton(c *ui.Context) {
-	label := "检查更新"
+	label := "更新技能"
 	if a.updateChecking {
 		label = "检查中…"
 	} else if a.updating {

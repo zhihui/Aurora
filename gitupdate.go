@@ -391,7 +391,7 @@ func (a *app) updateCount() int {
 	return n
 }
 
-// updateModal is the 检查更新 dialog: the check's outcome — nothing to
+// updateModal is the 更新技能 dialog: the check's outcome — nothing to
 // do, or the updates grouped by repository, each group cloned once —
 // and then the update's per-skill results.
 func (a *app) updateModal(c *ui.Context) {

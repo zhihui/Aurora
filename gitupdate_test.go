@@ -294,7 +294,7 @@ func TestRunUpdatesGroupErr(t *testing.T) {
 	}
 }
 
-// The header's 检查更新 opens the modal with the check's groups, and the
+// The header's 更新技能 opens the modal with the check's groups, and the
 // cards of the skills waiting wear 有更新.
 func TestCheckUpdatesFlow(t *testing.T) {
 	dir := t.TempDir()
@@ -317,7 +317,7 @@ func TestCheckUpdatesFlow(t *testing.T) {
 	a := &app{selected: "hub", focusSide: "sidebar", skillsDir: skillsDir}
 	a.loadSkills()
 	tt := ui.NewTester(a.view, 1000, 640)
-	if err := tt.Click("检查更新"); err != nil {
+	if err := tt.Click("更新技能"); err != nil {
 		t.Fatal(err)
 	}
 	<-applied
