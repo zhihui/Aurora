@@ -55,6 +55,11 @@ jobs:
         with:
           pattern: aurora-*
           merge-multiple: true
-      - run: gh release create ${{ github.ref_name }} * --title "Aurora ${{ github.ref_name }}" --generate-notes
+      - run: |
+          ls -la
+          shopt -s nullglob
+          files=(*.dmg *.exe *.deb *.tar.gz)
+          echo "release files: ${files[@]}"
+          gh release create "${{ github.ref_name }}" "${files[@]}" --title "Aurora ${{ github.ref_name }}" --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
