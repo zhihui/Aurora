@@ -84,6 +84,17 @@ type app struct {
 	updateGen      int             // the running check or update's generation, to tell its stale result
 	updateCancel   context.CancelFunc
 
+	appUpdOpen       bool         // the version update modal shows
+	appUpdChecking   bool         // a version check runs in the background
+	appUpdInstalling bool         // a version install runs in the background
+	appUpdAvail      *mygo.Update // the update the check found
+	appUpdErr        string       // the check or install's failure
+	appUpdChecked    bool         // a check finished and found nothing newer
+	appUpdProgress   float64      // the install's download, 0–1
+	appUpdDone       bool         // the update is installed and awaits a relaunch
+	appUpdGen        int          // the running check or install's generation, to tell its stale result
+	appUpdCancel     context.CancelFunc
+
 	agentView        string // the agent whose skills the Agent 技能 pane shows; "" for the first
 	agentSkillSearch string // the text that pane searches by
 
@@ -167,6 +178,7 @@ func (a *app) view(c *ui.Context) {
 	a.addAgentModal(c)
 	a.importSkillModal(c)
 	a.updateModal(c)
+	a.appUpdateModal(c)
 	a.skillViewModal(c)
 	a.deleteSkillModal(c)
 	a.packNameModal(c)
@@ -389,6 +401,9 @@ func main() {
 			StateKey: "main",
 			Content:  ui.View(a.view),
 		})
+		// The startup's check for a new version of the app itself: quiet
+		// unless there is one, which opens the update modal.
+		a.autoCheckAppUpdate()
 	})
 	if err := mygo.App.Run(); err != nil {
 		log.Fatal(err)

@@ -207,6 +207,7 @@ func (a *app) settings(c *ui.Context) {
 			ui.Column(c).Padding(20, 28, 24, 28).Gap(24).MaxWidth(640).Children(func() {
 				a.agentsSection(c)
 				a.llmSection(c)
+				a.appUpdateSection(c)
 			})
 		})
 	})

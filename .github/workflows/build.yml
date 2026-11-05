@@ -39,6 +39,10 @@ jobs:
         with:
           go-version-file: go.mod
       - run: go tool mygo build -platform ${{ matrix.platform }}
+        env:
+          # Signs the update archives and writes the update-<target>.json
+          # manifests that mygo.Updater checks (updates in mygo.json).
+          MYGO_UPDATER_PRIVATE_KEY: ${{ secrets.MYGO_UPDATER_PRIVATE_KEY }}
       - uses: actions/upload-artifact@v4
         with:
           name: aurora-${{ matrix.slug }}
@@ -61,7 +65,9 @@ jobs:
           cd dist
           ls -laR
           shopt -s nullglob globstar
-          files=(**/*.dmg **/*.exe **/*.deb **/*.tar.gz)
+          # The update manifests and delta archives go to the release too:
+          # installed apps check the manifest of the latest release.
+          files=(**/*.dmg **/*.exe **/*.deb **/*.tar.gz **/update-*.json **/*.delta)
           echo "release files: ${files[@]}"
           if ! out=$(gh release create "${{ github.ref_name }}" "${files[@]}" --title "Aurora ${{ github.ref_name }}" --generate-notes 2>&1); then
             printf '### Release failed\n```\n%s\n```\n' "$out" >> "$GITHUB_STEP_SUMMARY"

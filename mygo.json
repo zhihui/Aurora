@@ -1,6 +1,11 @@
 {
   "name": "Aurora",
   "identifier": "com.example.aurora",
-  "version": "0.1.0",
-  "out": "build"
+  "version": "0.2.0",
+  "out": "build",
+  "updates": {
+    "publicKey": "9rUzo5uwoWpFJcvwPX1d38+HBixz1e+/jjmDFqLtYS8=",
+    "github": "zhihui/Aurora",
+    "privateKey": "~/Library/Application Support/mygo/update-keys/mygo-update.key"
+  }
 }
