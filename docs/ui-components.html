@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aurora UI 组件参考</title>
+<style>
+  :root {
+    /* Aurora 主题色（MyGo ui.Theme，light） */
+    --bg: #ffffff; --surface: #f4f4f5; --surface-hover: #e9e9ec; --surface-pressed: #dddde1;
+    --border: #d9d9de; --text: #18181b; --text-muted: #71717a;
+    --accent: #2563eb; --accent-hover: #1d4ed8; --accent-text: #ffffff;
+    --danger: #dc2626; --warning: #d97706; --success: #16a34a;
+    --page-bg: #fafafa;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font: 13px/1.6 -apple-system, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+    color: var(--text); background: var(--page-bg);
+  }
+  .layout { display: flex; min-height: 100vh; }
+  nav {
+    width: 220px; flex-shrink: 0; padding: 24px 12px; position: sticky; top: 0;
+    height: 100vh; overflow: auto; background: var(--surface); border-right: 1px solid var(--border);
+  }
+  nav .nav-title { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; padding: 12px 10px 4px; }
+  nav .nav-title:first-child { padding-top: 0; }
+  nav a {
+    display: block; padding: 4px 10px; border-radius: 6px; color: var(--text);
+    text-decoration: none; font-size: 13px;
+  }
+  nav a:hover { background: var(--surface-hover); }
+  main { flex: 1; min-width: 0; padding: 32px 40px 120px; max-width: 960px; }
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .lede { color: var(--text-muted); margin-bottom: 28px; max-width: 640px; }
+  h2 {
+    font-size: 15px; font-weight: 700; margin: 40px 0 4px; padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .section-note { color: var(--text-muted); font-size: 12px; margin-bottom: 16px; }
+  .card {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px; margin: 14px 0;
+  }
+  .card h3 { font-size: 13.5px; font-weight: 600; }
+  .card h3 code { font-weight: 600; font-size: 12px; }
+  .src { font-size: 11px; color: var(--text-muted); font-family: ui-monospace, "SF Mono", Menlo, monospace; margin: 2px 0 10px; }
+  .desc { color: var(--text); margin-bottom: 12px; max-width: 640px; }
+  .desc code, p code, li code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11.5px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+  /* 规格表 */
+  .specs { width: 100%; border-collapse: collapse; font-size: 12px; margin: 10px 0; }
+  .specs th { text-align: left; font-weight: 600; color: var(--text-muted); font-size: 11px; padding: 4px 10px 4px 0; border-bottom: 1px solid var(--border); }
+  .specs td { padding: 4px 10px 4px 0; border-bottom: 1px solid var(--surface); vertical-align: top; }
+  .specs td:first-child { color: var(--text-muted); white-space: nowrap; width: 1%; padding-right: 16px; }
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11.5px; }
+  /* 状态行 */
+  .states { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 10px 0 4px; }
+  .state-label { font-size: 10.5px; color: var(--text-muted); text-align: center; margin-top: 4px; }
+  .state-wrap { display: flex; flex-direction: column; align-items: flex-start; }
+  /* HIG 关联 */
+  .hig {
+    font-size: 11.5px; color: var(--text-muted); background: var(--surface);
+    border-radius: 6px; padding: 8px 12px; margin-top: 10px;
+  }
+  .hig b { color: var(--text); font-weight: 600; }
+  /* 色板 */
+  .swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
+  .swatch { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg); }
+  .swatch .c { height: 44px; }
+  .swatch .n { padding: 6px 10px; font-size: 11px; }
+  .swatch .n .name { font-weight: 600; font-size: 11.5px; }
+  .swatch .n .hex { color: var(--text-muted); font-family: ui-monospace, Menlo, monospace; }
+  .swatch .n .dark-hex { color: var(--text-muted); font-family: ui-monospace, Menlo, monospace; display:block; }
+  /* ---- Aurora 组件 mock（尽量贴近真实渲染） ---- */
+  .mock-area { background: var(--surface); border-radius: 8px; padding: 20px; margin: 10px 0; display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+  .mock-area.on-white { background: var(--bg); border: 1px solid var(--border); }
+  /* 胶囊搜索 */
+  .a-capsule-search {
+    display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px;
+    border-radius: 14px; background: var(--surface); border: 2px solid var(--surface);
+    color: var(--text-muted); width: 200px; font-size: 13px;
+  }
+  .a-capsule-search.focused { border-color: rgba(37, 99, 235, .45); }
+  /* 主按钮 / 次按钮 */
+  .a-btn-primary {
+    display: inline-flex; align-items: center; height: 26px; padding: 0 12px; border-radius: 6px;
+    background: var(--accent); color: var(--accent-text); font-weight: 500; border: none; font-size: 12.5px;
+  }
+  .a-btn-primary.hover { background: var(--accent-hover); }
+  .a-btn-primary.disabled { opacity: .5; }
+  .a-btn-secondary {
+    display: inline-flex; align-items: center; height: 26px; padding: 0 12px; border-radius: 6px;
+    background: var(--bg); color: var(--text); border: 1px solid var(--border); font-size: 12.5px;
+  }
+  .a-btn-secondary.hover { background: var(--surface-hover); }
+  /* 开关胶囊 chip */
+  .a-chip {
+    display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 500;
+  }
+  .a-chip.on { border: 1px solid var(--accent); background: rgba(37,99,235,.12); color: var(--text); }
+  .a-chip.on.hover { background: rgba(37,99,235,.2); }
+  .a-chip.off { border: 1px solid var(--border); background: var(--bg); color: var(--text-muted); }
+  .a-chip.off.hover { background: var(--surface-hover); color: var(--text); }
+  /* 选择器胶囊 */
+  .a-chip-pick { display: inline-flex; align-items: center; height: 28px; padding: 0 14px; border-radius: 14px; font-size: 12px; font-weight: 500; }
+  .a-chip-pick.on { border: 1px solid var(--accent); background: var(--accent); color: #fff; }
+  .a-chip-pick.off { border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+  /* 成员胶囊 */
+  .a-chip-member {
+    display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 4px 0 10px;
+    border-radius: 12px; border: 1px solid var(--border); background: var(--bg); font-size: 11px; font-weight: 500;
+  }
+  .a-chip-member.missing { border-color: rgba(217,119,6,.5); background: rgba(217,119,6,.08); color: var(--warning); }
+  .a-chip-x { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 4px; color: var(--text-muted); font-size: 9px; }
+  .a-chip-x:hover { background: var(--surface-hover); color: var(--text); }
+  /* 添加胶囊 */
+  .a-chip-add {
+    display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 10px; border-radius: 12px;
+    border: 1px solid rgba(37,99,235,.5); color: var(--accent); font-size: 11px; font-weight: 500; background: transparent;
+  }
+  .a-chip-add.hover { background: rgba(37,99,235,.08); }
+  /* tag */
+  .a-tag { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 5px; background: var(--surface-hover); color: var(--text-muted); font-size: 10px; font-weight: 500; }
+  .a-tag.blue { background: rgba(37,99,235,.12); color: var(--accent); padding: 3px 8px; border-radius: 6px; }
+  .a-tag.green { background: rgba(22,163,74,.12); color: var(--success); }
+  .a-tag.amber { background: rgba(217,119,6,.15); color: var(--warning); padding: 1px 6px; }
+  .a-tag.gray-blue { background: rgba(37,99,235,.12); color: var(--accent); }
+  /* 图标按钮 */
+  .a-icon-btn {
+    display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px;
+    border-radius: 6px; color: var(--text-muted); background: transparent;
+  }
+  .a-icon-btn.hover { background: var(--surface-hover); color: var(--text); }
+  .a-icon-btn.bordered { width: 28px; height: 28px; border: 1px solid var(--border); background: var(--bg); }
+  /* 文字按钮 */
+  .a-link { display: inline-flex; padding: 3px 6px; border-radius: 5px; color: var(--accent); font-size: 12px; }
+  .a-link.hover { background: rgba(37,99,235,.12); }
+  .a-link.disabled { color: rgba(113,113,122,.5); }
+  /* 卡片 */
+  .a-card { background: var(--surface); border-radius: 12px; padding: 14px 16px; width: 300px; display: flex; flex-direction: column; gap: 8px; }
+  .a-card .title-row { display: flex; align-items: center; gap: 6px; }
+  .a-card .name { font-weight: 700; font-size: 13px; }
+  .a-card .dir { font-size: 11px; color: var(--text-muted); }
+  .a-card .desc2 { font-size: 12px; color: var(--text-muted); line-height: 17px; height: 34px; overflow: hidden; }
+  .a-card .path { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--text-muted); }
+  .a-card .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  /* 列表行（agent 行） */
+  .a-row {
+    display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--bg); width: 420px;
+  }
+  .a-row.hover { background: var(--surface-hover); }
+  .a-row.chosen { border-color: var(--accent); background: rgba(37,99,235,.12); }
+  .a-avatar { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 15px; flex-shrink: 0; }
+  .a-row .meta { flex: 1; min-width: 0; }
+  .a-row .meta .n { font-weight: 700; font-size: 13px; }
+  .a-row .meta .d { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--text-muted); }
+  /* 解析行 */
+  .a-parsed-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); width: 420px; }
+  .a-checkbox { width: 15px; height: 15px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); display: inline-flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; font-size: 10px; }
+  .a-checkbox.on { background: var(--accent); border-color: var(--accent); }
+  /* 分段控件 */
+  .a-seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: 8px; background: var(--surface); width: 220px; }
+  .a-seg .seg { flex: 1; text-align: center; padding: 5px 12px; border-radius: 6px; font-size: 13px; }
+  .a-seg .seg.on { background: var(--bg); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+  .a-seg .seg.off { color: var(--text-muted); }
+  /* 侧栏条目 */
+  .a-sidebar { background: var(--surface); border-radius: 8px; padding: 6px; width: 200px; }
+  .a-side-item { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 6px; font-size: 13px; }
+  .a-side-item.on { background: var(--accent); color: #fff; }
+  .a-side-icon { width: 16px; height: 16px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 9px; font-weight: 700; flex-shrink: 0; }
+  /* modal 结构示意 */
+  .a-modal { width: 420px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--bg); box-shadow: 0 10px 32px rgba(0,0,0,.16); font-size: 13px; }
+  .a-modal .m-head { padding: 14px 16px 12px; }
+  .a-modal .m-title { font-size: 15px; font-weight: 700; }
+  .a-modal .m-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .a-modal .m-body { padding: 14px 16px; color: var(--text-muted); font-size: 12px; }
+  .a-modal .m-foot { padding: 10px 16px; display: flex; justify-content: flex-end; gap: 10px; }
+  .a-divider { height: 1px; background: var(--border); }
+  /* toast */
+  .a-toast { display: inline-flex; padding: 8px 14px; border-radius: 8px; background: rgba(24,24,27,.92); color: #fff; font-size: 12px; box-shadow: 0 4px 14px rgba(0,0,0,.2); }
+  /* 空状态 */
+  .a-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 28px; color: var(--text-muted); width: 300px; }
+  .a-empty .icon { width: 40px; height: 40px; border-radius: 10px; background: var(--surface-hover); }
+  /* ASCII 布局 */
+  pre.layout-ascii { font-family: ui-monospace, Menlo, monospace; font-size: 11px; line-height: 1.5; background: var(--surface); border-radius: 8px; padding: 14px 16px; overflow-x: auto; color: var(--text); }
+  /* 检查清单 */
+  .checklist { font-size: 12px; padding-left: 18px; }
+  .checklist li { margin: 3px 0; }
+  .kbd { font-family: ui-monospace, Menlo, monospace; font-size: 11px; background: var(--surface); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; }
+  .pill { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 10.5px; font-weight: 600; margin-left: 6px; vertical-align: 1px; }
+  .pill.interactive { background: rgba(37,99,235,.12); color: var(--accent); }
+  .pill.static { background: var(--surface-hover); color: var(--text-muted); }
+  .pill.feedback { background: rgba(22,163,74,.12); color: var(--success); }
+  /* 改进建议 */
+  .pill.sev-high { background: rgba(220,38,38,.1); color: var(--danger); }
+  .pill.sev-med { background: rgba(217,119,6,.12); color: var(--warning); }
+  .pill.sev-low { background: var(--surface-hover); color: var(--text-muted); }
+  .pill.sev-keep { background: rgba(22,163,74,.12); color: var(--success); }
+  .improve { border-left: 3px solid var(--warning); }
+  .improve.high { border-left-color: var(--danger); }
+  .improve.low { border-left-color: var(--border); }
+  .improve .why { font-size: 12px; color: var(--text-muted); margin: 8px 0; }
+  .improve .why b, .improve .fix b { color: var(--text); }
+  .improve .fix { font-size: 12.5px; margin: 8px 0 2px; }
+  .compare { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start; margin: 10px 0; }
+  .compare .col { display: flex; flex-direction: column; gap: 8px; }
+  .compare .col-label { font-size: 10.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+</style>
+</head>
+<body>
+<div class="layout">
+<nav>
+  <div class="nav-title">基础</div>
+  <a href="#tokens">设计 Token</a>
+  <a href="#typography">字体层级</a>
+  <a href="#metrics">关键尺寸</a>
+  <a href="#skeleton">窗口骨架</a>
+  <div class="nav-title">导航</div>
+  <a href="#sidebar">侧栏</a>
+  <a href="#pane-header">页面顶栏</a>
+  <div class="nav-title">输入</div>
+  <a href="#capsule-search">胶囊搜索框</a>
+  <a href="#import-field">输入框 / 多行输入</a>
+  <a href="#segment">分段控件</a>
+  <a href="#checkbox">复选框</a>
+  <div class="nav-title">按钮</div>
+  <a href="#buttons">主 / 次按钮</a>
+  <a href="#icon-action">图标按钮</a>
+  <a href="#link-action">文字按钮</a>
+  <a href="#popover-menu">⋯ 弹出菜单</a>
+  <div class="nav-title">胶囊家族</div>
+  <a href="#chip">开关胶囊 chip</a>
+  <a href="#pick-chip">选择器胶囊</a>
+  <a href="#member-chip">成员胶囊</a>
+  <a href="#add-chip">添加胶囊</a>
+  <div class="nav-title">标签</div>
+  <a href="#tag">tag / 徽章</a>
+  <a href="#semantic-tags">语义来源标签</a>
+  <a href="#avatar">Avatar</a>
+  <div class="nav-title">卡片与列表</div>
+  <a href="#skill-card">技能卡片</a>
+  <a href="#pack-card">技能包卡片</a>
+  <a href="#agent-skill-card">Agent 技能卡片</a>
+  <a href="#agent-row">Agent 列表行</a>
+  <a href="#preset-row">预设列表行</a>
+  <a href="#parsed-row">解析结果行</a>
+  <a href="#pick-row">挑选列表行</a>
+  <div class="nav-title">弹窗与反馈</div>
+  <a href="#modal">Modal 结构</a>
+  <a href="#alert-dialog">确认对话框</a>
+  <a href="#toast">Toast</a>
+  <a href="#empty">空状态</a>
+  <div class="nav-title">改进建议</div>
+  <a href="#improve-main">值得改的三处</a>
+  <a href="#improve-details">细节优化</a>
+  <a href="#keep-as-is">评估后保留现状</a>
+  <div class="nav-title">参考</div>
+  <a href="#hig-map">HIG 对照</a>
+  <a href="#checklist">优化前检查清单</a>
+</nav>
+<main>
+  <h1>Aurora UI 组件参考</h1>
+  <p class="lede">
+    本页盘点 Aurora（Go + MyGo <code>ui</code> 包，native 渲染，无 HTML）用到的全部 UI 组件，
+    记录每个组件的规格、状态与所在源码位置，并标注对应的 Apple HIG 章节（apple-design 技能的
+    <code>references/hig/</code>）。<b>用途：后续优化 UI 时的现状基线与对照表。</b>文末「改进机会」
+    给出了逐项对照 HIG 后<b>确有更好替代</b>的建议与<b>评估后保留现状</b>的清单。
+    视觉 mock 为 HTML 近似，精确行为以源码为准；所有尺寸单位为 DIP。
+  </p>
+
+  <!-- ===================== Token ===================== -->
+  <h2 id="tokens">设计 Token（颜色）</h2>
+  <p class="section-note">来自 MyGo 默认主题 <code>ui/theme.go</code>（LightTheme / DarkTheme）。UI.md 设计原则 4：<b>一律用主题色，不写字面量</b>；浅色变体用 <code>t.Accent.Alpha(0.12)</code> 这类透明度派生。alpha 派生是本项目视觉语言的核心（选中底、焦点环、徽章底全部是 accent 的 alpha 变体）。</p>
+  <div class="card">
+    <h3>主题色板（Light / Dark）</h3>
+    <div class="swatch-grid">
+      <div class="swatch"><div class="c" style="background:#ffffff;border-bottom:1px solid var(--border)"></div><div class="n"><div class="name">Background</div><div class="hex">#ffffff</div><span class="dark-hex">dark #18181b</span></div></div>
+      <div class="swatch"><div class="c" style="background:#f4f4f5"></div><div class="n"><div class="name">Surface</div><div class="hex">#f4f4f5</div><span class="dark-hex">dark #27272a</span></div></div>
+      <div class="swatch"><div class="c" style="background:#e9e9ec"></div><div class="n"><div class="name">SurfaceHover</div><div class="hex">#e9e9ec</div><span class="dark-hex">dark #323236</span></div></div>
+      <div class="swatch"><div class="c" style="background:#dddde1"></div><div class="n"><div class="name">SurfacePressed</div><div class="hex">#dddde1</div><span class="dark-hex">dark #3c3c41</span></div></div>
+      <div class="swatch"><div class="c" style="background:#d9d9de"></div><div class="n"><div class="name">Border</div><div class="hex">#d9d9de</div><span class="dark-hex">dark #3f3f46</span></div></div>
+      <div class="swatch"><div class="c" style="background:#18181b"></div><div class="n"><div class="name">Text</div><div class="hex">#18181b</div><span class="dark-hex">dark #f4f4f5</span></div></div>
+      <div class="swatch"><div class="c" style="background:#71717a"></div><div class="n"><div class="name">TextMuted</div><div class="hex">#71717a</div><span class="dark-hex">dark #a1a1aa</span></div></div>
+      <div class="swatch"><div class="c" style="background:#2563eb"></div><div class="n"><div class="name">Accent</div><div class="hex">#2563eb</div><span class="dark-hex">dark #3b82f6</span></div></div>
+      <div class="swatch"><div class="c" style="background:#1d4ed8"></div><div class="n"><div class="name">AccentHover</div><div class="hex">#1d4ed8</div><span class="dark-hex">dark #60a5fa</span></div></div>
+      <div class="swatch"><div class="c" style="background:#dc2626"></div><div class="n"><div class="name">Danger</div><div class="hex">#dc2626</div><span class="dark-hex">dark #ef4444</span></div></div>
+      <div class="swatch"><div class="c" style="background:#d97706"></div><div class="n"><div class="name">Warning</div><div class="hex">#d97706</div><span class="dark-hex">dark #f59e0b</span></div></div>
+      <div class="swatch"><div class="c" style="background:#16a34a"></div><div class="n"><div class="name">Success</div><div class="hex">#16a34a</div><span class="dark-hex">dark #22c55e</span></div></div>
+    </div>
+    <table class="specs">
+      <tr><th>派生用法</th><th>值</th><th>用在</th></tr>
+      <tr><td>选中浅底</td><td class="mono">t.Accent.Alpha(0.12)</td><td>chip 选中、defaultTag、linkAction hover</td></tr>
+      <tr><td>选中浅底 hover</td><td class="mono">t.Accent.Alpha(0.2)</td><td>chip 选中态 hover</td></tr>
+      <tr><td>淡蓝底（次强调）</td><td class="mono">t.Accent.Alpha(0.08)</td><td>presetRow 选中、packAddButton hover</td></tr>
+      <tr><td>实心 accent hover</td><td class="mono">t.Accent.Alpha(0.85)</td><td>agentPickChip 选中 hover、agentSkillImport hover</td></tr>
+      <tr><td>焦点环</td><td class="mono">t.Accent.Alpha(0.45)</td><td>capsuleSearch / importField / importTextArea 聚焦边框（2 宽）</td></tr>
+      <tr><td>警告浅底 / 边</td><td class="mono">t.Warning.Alpha(0.08/0.15/0.5)</td><td>已丢失胶囊、已存在徽章</td></tr>
+      <tr><td>成功浅底</td><td class="mono">t.Success.Alpha(0.12)</td><td>「真实目录」标签</td></tr>
+    </table>
+    <div class="hig"><b>HIG：</b><code>color.md</code>（语义色、深浅外观）、<code>dark-mode.md</code>。注意 HIG 要求 light/dark 两套外观且<b>不做应用内外观开关</b>——目前 Aurora 跟随系统主题，符合。</div>
+  </div>
+
+  <!-- ===================== Typography ===================== -->
+  <h2 id="typography">字体层级</h2>
+  <p class="section-note">系统字体，macOS 基准字号 13pt（<code>defaultFontSize()</code>，Windows/Linux 14）。层级靠字重（Bold / 500 medium）与 muted 色区分，不用多种字族；等宽字体只用于路径与代码。</p>
+  <div class="card">
+    <table class="specs">
+      <tr><th>字号</th><th>字重</th><th>用在</th></tr>
+      <tr><td>15pt</td><td>Bold</td><td>页面标题（paneHeader）、弹窗标题</td></tr>
+      <tr><td>14pt</td><td>Bold</td><td>技能包卡片名称</td></tr>
+      <tr><td>13pt（基准）</td><td>Regular / Bold / 500</td><td>正文、卡片名称（Bold）、列表行名称（Bold）、表单 label（500）、侧栏条目、解析状态行（500）</td></tr>
+      <tr><td>12pt</td><td>Regular / 500</td><td>次要文字：页面提示语、卡片简介、按钮文字（移除/导入）、选择器胶囊、文字按钮、错误行</td></tr>
+      <tr><td>11pt</td><td>Regular / 500</td><td>胶囊标签文字（500）、目录名后缀、路径（monospace）、卡片来源行、表单 hint</td></tr>
+      <tr><td>10pt</td><td>500</td><td>tag / 徽章文字（最小字号）</td></tr>
+    </table>
+    <table class="specs">
+      <tr><th>规则</th><th>来源</th></tr>
+      <tr><td>截断：<code>SingleLine()</code> / <code>MaxLines(n)</code>（自带省略号）；卡片简介固定两行 <code>FixedLineHeight(17) + Height(34)</code></td><td>hub.go:234</td></tr>
+      <tr><td>等宽：<code>.Font("monospace")</code> 用于路径、配置目录、SKILL.md 内容</td><td>agentskills.go:249, settings.go:264</td></tr>
+    </table>
+    <div class="hig"><b>HIG：</b><code>typography.md</code>。桌面基准 13pt、最小 10pt——本项目 10pt tag 已踩在下限，改 UI 时不要再往下。</div>
+  </div>
+
+  <!-- ===================== Metrics ===================== -->
+  <h2 id="metrics">关键尺寸</h2>
+  <div class="card">
+    <table class="specs">
+      <tr><th>常量</th><th>值</th><th>位置</th></tr>
+      <tr><td>titleBarHeight</td><td class="mono">52</td><td>main.go:14 — 内嵌标题栏 / paneHeader 高度</td></tr>
+      <tr><td>sidebarWidth</td><td class="mono">220</td><td>main.go:15 — 侧栏宽度</td></tr>
+      <tr><td>cardDescLine</td><td class="mono">17</td><td>hub.go:209 — 卡片简介行高（12pt 两行）</td></tr>
+      <tr><td>chipHeight / chipGap</td><td class="mono">24 / 6</td><td>hub.go:210-211 — 胶囊高度与间距</td></tr>
+      <tr><td>卡片圆角</td><td class="mono">Radius(12)</td><td>一律无边框 + <code>t.Surface</code> 底（UI.md 控件配方）</td></tr>
+      <tr><td>列表行圆角</td><td class="mono">Radius(10)</td><td>agentList 容器 / presetRow / parsedRow，带 1px Border（agentList 内部行间是缩进 hairline，不再有行级边框）</td></tr>
+      <tr><td>按钮 / 输入框圆角</td><td class="mono">6 / 8</td><td>按钮 6（主题默认 Radius），输入框 8，分段控件轨道 8 / 段 6</td></tr>
+      <tr><td>内容区 padding</td><td class="mono">16,28,24,28 + Gap(14)</td><td>技能中心 / 技能包 / Agent 技能三页统一；设置页例外 <code>24,28,0,28 + MaxWidth(640)</code></td></tr>
+      <tr><td>网格</td><td class="mono">ui.Grid Gap(14)，列数 gridColumns() 1/2/3</td><td>技能中心与 Agent 技能，按窗口宽度自适应（main.go）</td></tr>
+      <tr><td>Modal 内边距</td><td class="mono">自带 Space(5)=20</td><td>内容根加 <code>Margin(-t.Space(5))</code> 抵消，section 自带：头 <code>14,16,12,16</code>、内容 <code>14,16</code>、底 <code>10,16</code></td></tr>
+      <tr><td>主题 Spacing / Radius</td><td class="mono">4 / 6</td><td>MyGo Theme 默认</td></tr>
+    </table>
+    <div class="hig"><b>HIG：</b><code>layout.md</code>（对齐、分组、渐进呈现）。桌面可点目标参考最小 20×20pt：卡片 ×、胶囊内 ×（已加大）、iconAction 26×26、modalClose 24×24 均已达标。</div>
+  </div>
+
+  <!-- ===================== Skeleton ===================== -->
+  <h2 id="skeleton">窗口骨架</h2>
+  <p class="section-note">布局蓝本是 MyGo 源码的 <code>examples/vibrancy</code>。</p>
+  <div class="card">
+    <h3><code>app.view</code> <span class="pill static">结构</span></h3>
+    <div class="src">main.go:93 · main.go:253（窗口配置）</div>
+    <pre class="layout-ascii">┌────────────────────────────────────────────────┐
+│ ●●●  [icon] 侧栏 220 │  paneHeader 52 (DragWindow) │  ← TitleBarHiddenInset
+│      ui.Sidebar      ├────────────────────────────┤     红绿灯嵌入侧栏
+│      （vibrancy      │                            │
+│       毛玻璃）        │   pane（Scroll + 内容区）   │
+│                      │                            │
+└────────────────────────────────────────────────┘</pre>
+    <table class="specs">
+      <tr><th>要点</th><th>说明</th></tr>
+      <tr><td>窗口</td><td><code>TitleBarHiddenInset</code> + <code>VibrancySidebar</code>；1000×640，最小 720×480；<code>StateKey:"main"</code> 记忆位置</td></tr>
+      <tr><td>vibrancy</td><td>有 vibrancy 时根元素与侧栏背景设 <code>ui.Transparent</code>，否则侧栏 <code>t.Surface</code>、内容 <code>t.Background</code></td></tr>
+      <tr><td>折叠</td><td>侧栏 250ms 动画滑出（<code>Animate("sidebar",…)</code>），剩余 1px <code>t.Border</code> 分隔线随宽度隐藏；折叠按钮绝对定位 <code>Left(max(bar.Left+8, w-40))</code> 跟随右缘、收起后停靠红绿灯旁（32×28，Radius 6，hover SurfaceHover）</td></tr>
+      <tr><td>焦点</td><td><code>FocusBind(&amp;a.focusSide,"sidebar")</code>，启动自带焦点，展开时恢复——框架默认侧栏失焦后选中项变灰底，本项目强制无条件蓝底</td></tr>
+      <tr><td>菜单栏</td><td><code>installMenu()</code>（main.go）：App 菜单「设置…」⌘,、编辑菜单「搜索…」⌘F（经 <code>a.searchFocus</code> 聚焦当前页搜索框）、视图菜单「切换边栏」⌃⌘S（与顶栏折叠按钮共用 <code>toggleSidebar()</code>）；菜单 Click 里 <code>w.Update(fn)</code> 改状态并重绘</td></tr>
+    </table>
+    <div class="hig"><b>HIG：</b><code>windows.md</code>、<code>sidebars.md</code>、<code>liquid-glass.md</code> / <code>materials.md</code>（毛玻璃只属于浮层/侧栏材质，不进入内容层——本项目符合）。</div>
+  </div>
+
+  <!-- ===================== Sidebar ===================== -->
+  <h2 id="sidebar">侧栏 <code>sidebar / item</code></h2>
+  <div class="card">
+    <h3>侧栏条目 <span class="pill interactive">可交互</span></h3>
+    <div class="src">main.go:151（sidebar）· main.go:165（item）· icons.go（彩色方块图标）</div>
+    <p class="desc"><code>ui.Sidebar</code> + <code>ui.SidebarItem</code>。彩色图标用「透明占位 SVG + <code>ui.Image</code> 绝对定位覆盖」（<code>Left(t.Space(2)).Top(t.Space(1.5)).Size(16,16)</code>），因为框架会把图标强制染成文字色。选中项<b>无条件</b> <code>Background(t.Accent).TextColor(t.AccentText)</code>，尾注文字同步 AccentText。</p>
+    <div class="mock-area">
+      <div class="a-sidebar">
+        <div class="a-side-item on"><span class="a-side-icon" style="background:#2563eb">◎</span>技能中心</div>
+        <div class="a-side-item"><span class="a-side-icon" style="background:#8b5cf6">▣</span>技能包</div>
+        <div class="a-side-item"><span class="a-side-icon" style="background:#f59e0b">◉</span>Agent 技能</div>
+        <div class="a-side-item"><span class="a-side-icon" style="background:#64748b">⚙</span>设置</div>
+      </div>
+    </div>
+    <table class="specs">
+      <tr><th>状态</th><th>规格</th></tr>
+      <tr><td>选中</td><td>蓝底白字（Accent/AccentText），彩色图标保持原色</td></tr>
+      <tr><td>默认 / hover</td><td>框架默认样式（hover 由 ui.SidebarItem 提供）</td></tr>
+      <tr><td>焦点</td><td>启动即聚焦侧栏；折叠展开后恢复焦点</td></tr>
+    </table>
+    <div class="hig"><b>HIG：</b><code>sidebars.md</code>——最多两级、可隐藏、底部不放关键操作（本项目无底部操作，符合）。彩色方块图标 vs HIG 的符号单色惯例：这是本项目有意的品牌表达（参照 <code>branding.md</code>「熟悉尺寸与行为的再样式化」）。</div>
+  </div>
+
+  <!-- ===================== paneHeader ===================== -->
+  <h2 id="pane-header">页面顶栏 <code>paneHeader</code></h2>
+  <div class="card">
+    <h3>paneHeader <span class="pill static">结构</span></h3>
+    <div class="src">main.go:194 · headerLead main.go:207</div>
+    <p class="desc"><b>所有页面顶栏必须用它</b>。高 52（titleBarHeight），可拖拽窗口（<code>DragWindow()</code>）。标题 15pt Bold + 右侧 actions（搜索框、主按钮）。侧栏折叠时左内边距变为 <code>TitleBar().Left+48</code> 让开红绿灯与折叠按钮，展开时 20。顶栏下紧跟 <code>ui.Divider</code>。</p>
+    <div class="mock-area on-white" style="align-items:center">
+      <div style="flex:1;min-width:200px;display:flex;align-items:center;gap:10px;height:52px;padding:0 20px;border-bottom:1px solid var(--border);width:100%">
+        <span style="font-size:15px;font-weight:700;flex:1">技能中心</span>
+        <span class="a-capsule-search">🔍 搜索技能…</span>
+        <span class="a-btn-primary">导入技能</span>
+      </div>
+    </div>
+    <div class="hig"><b>HIG：</b><code>toolbars.md</code>（当前视图的操作集中在顶部工具区）、<code>windows.md</code>。</div>
+  </div>
+
+  <!-- ===================== capsuleSearch ===================== -->
+  <h2 id="capsule-search">胶囊搜索框 <code>capsuleSearch</code></h2>
+  <div class="card">
+    <h3>capsuleSearch <span class="pill interactive">可交互</span></h3>
+    <div class="src">hub.go · 复用于：技能中心 / 技能包 顶栏、添加技能弹窗、Agent 技能页通栏</div>
+    <p class="desc"><code>TextInputBase</code>（无样式）+ 自绘外壳：高 28、Radius 14、Surface 底、padding <code>0,6,0,12</code>、13px 搜索图标。点击整壳聚焦输入（<code>Cursor(ui.CursorText)</code>）。<b>有内容时尾部出现 16×16 清除按钮</b>（key <code>clear:</code>+label），点击清空并保持焦点。第四个参数 <code>focus bool</code> 在构建时聚焦输入，给菜单「搜索…」（⌘F）用。宽度由调用方定（顶栏 200，通栏拉伸）。</p>
+    <div class="mock-area on-white">
+      <div class="state-wrap"><span class="a-capsule-search">🔍 搜索技能…</span><span class="state-label">默认（Border 2 同色）</span></div>
+      <div class="state-wrap"><span class="a-capsule-search focused" style="justify-content:space-between">🔍 pdf <span class="a-chip-x" style="background:var(--surface-hover)">✕</span></span><span class="state-label">聚焦 + 有内容（尾部清除按钮）</span></div>
+    </div>
+    <table class="specs">
+      <tr><th>关键配方</th><th>说明</th></tr>
+      <tr><td>防抖动焦点环</td><td>默认即 <code>Border(2, t.Surface)</code>（与背景同色），聚焦只改颜色为 <code>t.Accent.Alpha(0.45)</code>——边框恒 2 宽，聚焦不移位</td></tr>
+      <tr><td>清除按钮</td><td><code>*value != ""</code> 时条件渲染，点击置空并 <code>input.Focus()</code>（search-fields.md：搜索框 = 图标 + Clear 按钮 + 占位符）</td></tr>
+    </table>
+    <div class="hig"><b>HIG：</b><code>search-fields.md</code>、<code>searching.md</code>。搜索过滤为纯前端即时过滤（<code>matchSkill</code>，匹配名称/简介/agent 名）。</div>
+  </div>
+
+  <!-- ===================== importField ===================== -->
+  <h2 id="import-field">输入框 <code>importField / importTextArea</code> 与表单 label</h2>
+  <div class="card">
+    <h3>导入弹窗表单输入 <span class="pill interactive">可交互</span></h3>
+    <div class="src">import.go:530（importField）· import.go:546（importTextArea）· import.go:349（importLabel）· import.go:360（importHelp）· import.go:366（importErrRow）</div>
+    <p class="desc">与胶囊搜索同一焦点环配方，但方形：单行高 32、Radius 8、padding 0,10；多行为 <code>Column.Grow(1)</code> + <code>TextAreaBase</code>（monospace 12pt），padding 8,10。<b>粘贴/新建 的多行框不放 <code>ui.Scroll</code></b>——Scroll 内容高度由内容决定，Grow 分不到空间，故直接撑满弹窗中段（import.go:268 分支）。</p>
+    <div class="mock-area on-white">
+      <div class="state-wrap"><span style="display:inline-flex;align-items:center;height:32px;padding:0 10px;border-radius:8px;background:var(--surface);border:2px solid var(--surface);width:260px;color:var(--text-muted);font-size:13px">https://github.com/owner/repo/…</span><span class="state-label">默认</span></div>
+      <div class="state-wrap"><span style="display:inline-flex;align-items:center;height:32px;padding:0 10px;border-radius:8px;background:var(--surface);border:2px solid rgba(37,99,235,.45);width:260px;font-size:13px">owner/repo|</span><span class="state-label">聚焦</span></div>
+    </div>
+    <table class="specs">
+      <tr><th>配套元素</th><th>规格</th></tr>
+      <tr><td>importLabel</td><td>label 13pt 500 + hint 11pt muted 同行</td></tr>
+      <tr><td>importHelp</td><td>字段下方说明，12pt muted，FixedLineHeight(18)</td></tr>
+      <tr><td>importErrRow</td><td>解析/导入失败：12px 警告图标 + 12pt Danger 红字，表单下方</td></tr>
+      <tr><td>重名错误</td><td>packNameModal 内联：图标 + 红字 + 主按钮禁用（import.go 同款配方，packs.go:364）</td></tr>
+    </table>
+    <div class="hig"><b>HIG：</b><code>text-fields.md</code>、<code>entering-data.md</code>（动态校验——重名实时红字+禁用符合；placeholder 给例子不给说明符合）。</div>
+  </div>
+
+  <!-- ===================== segment ===================== -->
+  <h2 id="segment">分段控件 <code>segment</code></h2>
+  <div class="card">
+    <h3>添加 Agent 弹窗的 预设/自定义 切换 <span class="pill interactive">可交互</span></h3>
+    <div class="src">settings.go:365</div>
+    <p class="desc"><code>ui.SegmentedBase</code> 自绘 macOS 样式：轨道 <code>t.Surface</code> + Radius 8 + padding 2，每段 <code>.Grow(1)</code> padding 5,12 + Radius 6，选中段 <code>t.Background</code> 底 + 阴影 <code>Shadow(0,1,2,0,RGBA(0,0,0,0.12))</code>，未选中 muted 字。框架的 <code>ui.Segmented</code> 段不拉伸，所以用 Base 自绘。</p>
+    <div class="mock-area on-white">
+      <div class="a-seg"><span class="seg on">预设</span><span class="seg off">自定义</span></div>
+      <div class="a-seg"><span class="seg off">预设</span><span class="seg on">自定义</span></div>
+    </div>
+    <div class="hig"><b>HIG：</b><code>segmented-controls.md</code>。</div>
+  </div>
+
+  <!-- ===================== checkbox ===================== -->
+  <h2 id="checkbox">复选框 <code>ui.Checkbox</code></h2>
+  <div class="card">
+    <h3>解析结果勾选 + 链接导入选项 <span class="pill interactive">可交互</span></h3>
+    <div class="src">import.go:509（parsedRow 内）· import.go:434（本地方式「链接导入」）</div>
+    <p class="desc"><b>必须用 <code>ui.Checkbox(c, &amp;checked, "")</code></b>（空 label 只画方框，a11y 名 <code>.Label()</code> 另给）——<code>CheckboxBase</code> 渲染为空。Base 后缀控件全部无样式，这是通用规则。</p>
+    <div class="mock-area on-white">
+      <span class="a-checkbox on">✓</span>
+      <span class="a-checkbox"></span>
+    </div>
+    <div class="hig"><b>HIG：</b><code>toggles.md</code>。</div>
+  </div>
+
+  <!-- ===================== buttons ===================== -->
+  <h2 id="buttons">主按钮 / 次按钮 <code>ui.PrimaryButton / ui.Button</code></h2>
+  <div class="card">
+    <h3>框架自带按钮 <span class="pill interactive">可交互</span></h3>
+    <div class="src">全项目：顶栏主操作（hub.go:146 等）· 弹窗底部（取消 + PrimaryButton）</div>
+    <p class="desc">主按钮 Accent 蓝底白字；次按钮白底灰边。弹窗底部固定配方：右对齐 <code>Justify(ui.End)</code>、Gap 10、<code>ui.Button("取消")</code> + <code>ui.PrimaryButton(动作)</code>，主按钮不可用时 <code>.Disabled(...)</code> 并在 Clicked 分支再判一次（Tester 点击无视 Disabled）。动作按钮带计数：<code>导入 N 个技能</code>。<b>省略号惯例</b>：打开弹窗收集输入的按钮带尾随省略号——「导入技能…」「新建技能包…」「添加 Agent…」「＋ 添加技能…」（buttons.md › Push buttons）；直接执行的按钮不加。</p>
+    <div class="mock-area">
+      <div class="state-wrap"><span class="a-btn-primary">导入技能…</span><span class="state-label">PrimaryButton</span></div>
+      <div class="state-wrap"><span class="a-btn-primary hover">导入技能…</span><span class="state-label">hover（AccentHover）</span></div>
+      <div class="state-wrap"><span class="a-btn-primary disabled">解析中…</span><span class="state-label">disabled</span></div>
+      <div class="state-wrap"><span class="a-btn-secondary">取消</span><span class="state-label">Button</span></div>
+      <div class="state-wrap"><span class="a-btn-secondary hover">选文件夹</span><span class="state-label">hover（SurfaceHover）</span></div>
+    </div>
+    <div class="hig"><b>HIG：</b><code>buttons.md</code>——每个视图一个 prominent 动作（本项目符合：每页顶栏只有一个主按钮，弹窗底部只有右侧一个）。</div>
+  </div>
+
+  <!-- ===================== iconAction ===================== -->
+  <h2 id="icon-action">图标按钮 <code>iconAction / modalClose</code></h2>
+  <div class="card">
+    <h3>纯图标小按钮 <span class="pill interactive">可交互</span></h3>
+    <div class="src">packs.go:322（iconAction，26×26）· settings.go:321（modalClose，24×24）· hub.go:243（卡片删除 ×，20×20 仅 hover 显示）· packs.go:245（胶囊内 ×，16×16）</div>
+    <p class="desc">ButtonBase 自绘：Radius 6、muted 图标、hover <code>SurfaceHover</code> 底 + 正文色图标。必带 <code>.Label()</code> 与 <code>.Tooltip()</code>（iconAction）。卡片右上角删除 × 用 <code>Absolute()</code> 定位（不占布局，显隐不抖动），仅卡片 hover 时条件渲染。</p>
+    <div class="mock-area on-white">
+      <div class="state-wrap"><span class="a-icon-btn">✎</span><span class="state-label">iconAction 默认</span></div>
+      <div class="state-wrap"><span class="a-icon-btn hover">🗑</span><span class="state-label">hover</span></div>
+      <div class="state-wrap"><span class="a-icon-btn">✕</span><span class="state-label">modalClose 24×24</span></div>
+    </div>
+    <div class="hig"><b>HIG：</b><code>buttons.md</code>、<code>accessibility.md</code>——icon-only 控件必须有文本标签（本项目均带 Label；尺寸 24–26 接近桌面最小 20×20，胶囊内 16×16 见「关键尺寸」备注）。</div>
+  </div>
+
+  <!-- ===================== linkAction ===================== -->
+  <h2 id="link-action">文字按钮 <code>linkAction</code></h2>
+  <div class="card">
+    <h3>行内小文字动作 <span class="pill interactive">可交互</span></h3>
+    <div class="src">import.go:481 · 用在解析列表的「全选」「取消选择」</div>
+    <p class="desc">12pt accent 蓝字，padding 3,6、Radius 5，hover 淡蓝底（Accent.α12）；不适用时 <code>t.TextMuted.Alpha(0.5)</code> 置灰禁用。</p>
+    <div class="mock-area on-white">
+      <div class="state-wrap"><span class="a-link">全选</span><span class="state-label">默认</span></div>
+      <div class="state-wrap"><span class="a-link hover">取消选择</span><span class="state-label">hover</span></div>
+      <div class="state-wrap"><span class="a-link disabled">全选</span><span class="state-label">disabled</span></div>
+    </div>
+  </div>
+
+  <!-- ===================== popover ===================== -->
+  <h2 id="popover-menu">⋯ 弹出菜单 <code>agentMore</code></h2>
+  <div class="card">
+    <h3>行尾 ⋯ + PopoverMenuButton <span class="pill interactive">可交互</span></h3>
+    <div class="src">settings.go:297</div>
+    <p class="desc">28×28 带边框按钮（Border + Background(t.Background)），图标为填充圆点（小尺寸下实心比描边清晰）。菜单项：打开（openDir 系统文件管理器）/ 删除（内置 agent 无此项）。<b>注意：菜单项 <code>Chosen()</code> 在视图构建之外由框架单独重放</b>（<code>menuChoice</code>），处理函数只能直接改 app 状态，不能依赖构建期局部变量。</p>
+    <div class="mock-area on-white">
+      <span class="a-icon-btn bordered">•••</span>
+      <span style="border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.14);overflow:hidden;font-size:13px">
+        <span style="display:block;padding:5px 28px 5px 12px">打开</span>
+        <span class="a-divider" style="margin:2px 0"></span>
+        <span style="display:block;padding:5px 28px 5px 12px">删除</span>
+      </span>
+    </div>
+    <div class="hig"><b>HIG：</b><code>menus.md</code>、<code>context-menus.md</code>。</div>
+  </div>
+
+  <!-- ===================== chip ===================== -->
+  <h2 id="chip">开关胶囊 <code>chip / packAgentChip</code></h2>
+  <div class="card">
+    <h3>两态开关胶囊 <span class="pill interactive">可交互</span></h3>
+    <div class="src">hub.go:275（chip，技能卡片内按 agent 分配）· packs.go:281（packAgentChip，整包分配）</div>
+    <p class="desc">高 24、Radius 12（全圆角）、padding 0,10、11pt medium、Gap 4。<b>前缘图形区分状态</b>：选中 10px 对勾、未选中 10px 空心圆——形状+颜色双重区分（toggles.md），两态同尺寸，切换不改宽度，也不留空白占位。<b>选中态实时派生自文件系统</b>（<code>links.go</code> 的 <code>skillLink</code> / <code>packLinked</code>），不存内存状态。点击用构建期 <code>Clicked()</code>（非延迟 OnClick），以便随即 <code>c.Toast(...)</code> 提示冲突。名称被真实目录/文件/其他链接占用时不做更改并 toast。</p>
+    <div class="mock-area on-white">
+      <div class="state-wrap"><span class="a-chip on">✓ Claude</span><span class="state-label">选中（对勾 + 蓝边/淡蓝底/黑字）</span></div>
+      <div class="state-wrap"><span class="a-chip on hover">✓ Claude</span><span class="state-label">选中 hover（α0.2）</span></div>
+      <div class="state-wrap"><span class="a-chip off">○ Kimi Code</span><span class="state-label">未选中（空心圆 + 灰边/白底/灰字）</span></div>
+      <div class="state-wrap"><span class="a-chip off hover">○ Kimi Code</span><span class="state-label">未选中 hover</span></div>
+    </div>
+    <table class="specs">
+      <tr><th>状态</th><th>Border</th><th>Background</th><th>Text</th></tr>
+      <tr><td>选中</td><td class="mono">1, t.Accent</td><td class="mono">t.Accent.Alpha(0.12)</td><td class="mono">t.Text</td></tr>
+      <tr><td>选中 hover</td><td class="mono">同上</td><td class="mono">t.Accent.Alpha(0.2)</td><td class="mono">同上</td></tr>
+      <tr><td>未选中</td><td class="mono">1, t.Border</td><td class="mono">t.Background</td><td class="mono">t.TextMuted</td></tr>
+      <tr><td>未选中 hover</td><td class="mono">同上</td><td class="mono">t.SurfaceHover</td><td class="mono">t.Text</td></tr>
+    </table>
+    <p class="desc" style="margin-top:8px">四态边框恒 1 宽防布局抖动。空包 / 全丢失时点 packAgentChip 只 toast 不动作。</p>
+  </div>
+
+  <!-- ===================== pickChip ===================== -->
+  <h2 id="pick-chip">选择器胶囊 <code>agentPickChip</code></h2>
+  <div class="card">
+    <h3>单选切换胶囊 <span class="pill interactive">可交互</span></h3>
+    <div class="src">agentskills.go（agentPickChip）· Agent 技能页选择当前查看的 agent</div>
+    <p class="desc">与开关胶囊区分的<b>第三种胶囊</b>：更大（高 28、Radius 14、padding 0,14、12pt medium），选中=<b>实心填充</b>蓝底白字，未选中=灰边白底黑字。语义是「选择器」而非「开关」，所以用实心填充区分。<b>数量不限</b>：胶囊 Wrap 自动换行，不折叠成 pop-up 按钮（2026-11 用户决策：宁可多占行高也要一眼看到全部 agent）。</p>
+    <div class="mock-area on-white">
+      <div class="state-wrap"><span class="a-chip-pick on">通用 Agent</span><span class="state-label">胶囊选中（实心蓝/白字）</span></div>
+      <div class="state-wrap"><span class="a-chip-pick off">Claude</span><span class="state-label">胶囊未选中</span></div>
+    </div>
+  </div>
+
+  <!-- ===================== memberChip ===================== -->
+  <h2 id="member-chip">成员胶囊 <code>packSkillChip</code></h2>
+  <div class="card">
+    <h3>技能包成员胶囊（本体不可点）<span class="pill interactive">仅 × 可点</span></h3>
+    <div class="src">packs.go:223</div>
+    <p class="desc">普通 Row：高 24、Radius 12、padding 0,2,0,10、Gap 5、11pt medium。唯一控件是尾部 20×20 的 ×（从包中移除，遍历中改集合用 <code>packRemoval</code> 延迟模式；20×20 是桌面最小点击区，见 accessibility.md）。中心已没有的技能（应用外删除）渲染为<b>警告色「已丢失」</b>：Warning.α50 边 + α08 底 + 警告图标 + Warning 色字。</p>
+    <div class="mock-area on-white">
+      <div class="state-wrap"><span class="a-chip-member">pdf <span class="a-chip-x">✕</span></span><span class="state-label">正常成员</span></div>
+      <div class="state-wrap"><span class="a-chip-member missing">⚠ old-skill <span class="a-chip-x">✕</span></span><span class="state-label">已丢失（警告色）</span></div>
+    </div>
+    <div class="hig"><b>HIG：</b><code>color.md</code>——警告色只承担「数据已失效」语义；<code>feedback.md</code>（反馈在界面内，不弹窗）。</div>
+  </div>
+
+  <!-- ===================== addChip ===================== -->
+  <h2 id="add-chip">添加胶囊 <code>packAddButton</code></h2>
+  <div class="card">
+    <h3>「＋ 添加技能」accent 描边胶囊 <span class="pill interactive">可交互</span></h3>
+    <div class="src">packs.go:258</div>
+    <p class="desc">高 24、Radius 12、Accent.α50 边 + Accent 字 + 11px plus 图标，hover Accent.α08 底。与开关胶囊同高同形但语义为「动作」，所以用 accent 描边空心样式，在成员胶囊队列末尾。</p>
+    <div class="mock-area on-white">
+      <div class="state-wrap"><span class="a-chip-add">＋ 添加技能</span><span class="state-label">默认</span></div>
+      <div class="state-wrap"><span class="a-chip-add hover">＋ 添加技能</span><span class="state-label">hover</span></div>
+    </div>
+  </div>
+
+  <!-- ===================== tag ===================== -->
+  <h2 id="tag">tag / 徽章 <code>tag / defaultTag / ui.Badge</code></h2>
+  <div class="card">
+    <h3>文字标签家族 <span class="pill static">静态</span></h3>
+    <div class="src">settings.go:111（tag）· settings.go:284（defaultTag）· settings.go:214（ui.Badge 数字计数）</div>
+    <p class="desc">文字标签<b>一律用 <code>tag()</code></b>：padding 2,8、Radius 5、<code>t.SurfaceHover</code> 底、10pt medium muted 字。<code>ui.Badge</code> 是给侧栏数字计数设计的（padding 极小），只用于「Agents」标题旁的计数。defaultTag：淡蓝底（Accent.α12）+ 10px 对勾 + 蓝字，padding 3,8、Radius 6。</p>
+    <div class="mock-area on-white">
+      <span class="a-tag">github.com</span>
+      <span class="a-tag">本地文件</span>
+      <span class="a-tag">未知来源</span>
+      <span class="a-tag">已添加</span>
+      <span class="a-tag">N 个技能</span>
+      <span class="a-tag blue">✓ 默认</span>
+      <span class="a-tag amber">⚠ 已存在</span>
+    </div>
+    <table class="specs">
+      <tr><th>变体</th><th>规格</th><th>用在</th></tr>
+      <tr><td>tag</td><td class="mono">SurfaceHover 底 / muted 字 / Radius 5 / padding 2,8</td><td>技能来源（sourceLabel）、「已添加」、「N 个技能」</td></tr>
+      <tr><td>defaultTag</td><td class="mono">Accent.α12 底 / Accent 字 + 对勾 / Radius 6</td><td>内置「通用 Agent」徽章</td></tr>
+      <tr><td>已存在徽章</td><td class="mono">Warning.α15 底 / Warning 字 + 图标 / padding 1,6 / Radius 5</td><td>解析结果行（import.go:514），导入覆盖提示</td></tr>
+    </table>
+  </div>
+
+  <!-- ===================== semanticTags ===================== -->
+  <h2 id="semantic-tags">语义来源标签 <code>agentSkillTag</code></h2>
+  <div class="card">
+    <h3>Agent 技能页的三态标签 <span class="pill static">静态</span></h3>
+    <div class="src">agentskills.go:266 · 配套说明行 agentSkillHint agentskills.go:185</div>
+    <p class="desc">规格同 <code>tag()</code>（padding 2,8、Radius 5、10pt medium），按语义配色。说明行 <code>agentSkillHint</code> 里的关键词用同样的颜色呼应——颜色承担分类语义，不靠位置记忆。</p>
+    <div class="mock-area on-white">
+      <div class="state-wrap"><span class="a-tag gray-blue">技能中心</span><span class="state-label">链接到中心（Accent.α12 / Accent）</span></div>
+      <div class="state-wrap"><span class="a-tag green">真实目录</span><span class="state-label">（Success.α12 / Success）</span></div>
+      <div class="state-wrap"><span class="a-tag">外部软链接</span><span class="state-label">（SurfaceHover / muted）</span></div>
+    </div>
+  </div>
+
+  <!-- ===================== avatar ===================== -->
+  <h2 id="avatar">Avatar <code>avatar</code></h2>
+  <div class="card">
+    <h3>agent 头像（名字取色）<span class="pill static">静态</span></h3>
+    <div class="src">settings.go:103（avatar）· settings.go:71（avatarColors）· settings.go:75（abbrev）· settings.go:89（agentColor）</div>
+    <p class="desc">圆角方形（Radius = size/4），底色由名字 hash 从 7 色调色板取（同一 agent 处处同色），文字为名字前两字母（首字母大写；非字母名取首字符），白字 Bold，字号 = size×0.38。设置页列表 40px、预设弹窗 36px。</p>
+    <div class="mock-area on-white" id="avatar-row">
+      <div class="a-avatar" style="background:#0A84FF">Cl</div>
+      <div class="a-avatar" style="background:#BF5AF2">Ki</div>
+      <div class="a-avatar" style="background:#5E5CE6">Co</div>
+      <div class="a-avatar" style="background:#FF375F">通</div>
+      <div class="a-avatar" style="background:#30D158">Pi</div>
+    </div>
+    <table class="specs">
+      <tr><th>调色板</th><td class="mono">#0A84FF · #BF5AF2 · #5E5CE6 · #FF375F · #FF9F0A · #30D158 · #64D2FF（Apple 系统色）</td></tr>
+    </table>
+  </div>
+
+  <!-- ===================== skillCard ===================== -->
+  <h2 id="skill-card">技能卡片 <code>skillCard</code>（技能中心）</h2>
+  <div class="card">
+    <h3>两列网格卡片 <span class="pill interactive">含交互</span></h3>
+    <div class="src">hub.go:217 · 删除确认 hub.go:255（AlertDialog）</div>
+    <p class="desc"><b>一律无边框</b>：Radius 12 + <code>t.Surface</code> 底、padding 14,16、Gap 8。结构：名称（13 Bold）+ 目录名后缀（Dir≠Name 时灰色 <code>(目录名)</code>，区分同名技能）→ 简介 12pt muted 固定两行（<code>FixedLineHeight(17)</code>，空简介显示「暂无简介」）→ agent 开关胶囊行（Wrap）→ 底部来源 tag。卡片右上角删除 × <b>常驻但低对比</b>（Absolute 定位、20×20、默认 <code>t.TextMuted.Alpha(0.55)</code>、hover 加底色加深）——键盘用户与新用户也能发现它（accessibility.md 键盘-only），不再是 hover 才渲染。</p>
+    <div class="mock-area">
+      <div class="a-card">
+        <div class="title-row"><span class="name">pdf</span><span class="dir">(pdf-tools)</span><span style="flex:1"></span><span class="a-icon-btn" style="width:20px;height:20px;border-radius:5px;font-size:10px">✕</span></div>
+        <div class="desc2">从 PDF 中提取文本、表格与图片，支持批量处理与合并拆分。</div>
+        <div class="chips"><span class="a-chip on">✓ 通用 Agent</span><span class="a-chip off">○ Claude</span><span class="a-chip off">○ Kimi Code</span></div>
+        <div><span class="a-tag">github.com</span></div>
+      </div>
+      <div class="a-card">
+        <div class="title-row"><span class="name">code-review</span></div>
+        <div class="desc2">暂无简介</div>
+        <div class="chips"><span class="a-chip off">○ 通用 Agent</span><span class="a-chip off">○ Claude</span></div>
+        <div><span class="a-tag">本地链接</span></div>
+      </div>
+    </div>
+    <div class="hig"><b>HIG：</b><code>collections.md</code>、<code>boxes.md</code>。来源用标签表达而非边框（UI.md 控件配方「卡片一律无边框」），与 <code>branding.md</code>「品牌色留给主操作」一致——卡片的蓝色只出现在选中胶囊上。</div>
+  </div>
+
+  <!-- ===================== packCard ===================== -->
+  <h2 id="pack-card">技能包卡片 <code>packCard</code></h2>
+  <div class="card">
+    <h3>单列卡片（无边框）<span class="pill interactive">含交互</span></h3>
+    <div class="src">packs.go:174</div>
+    <p class="desc">Radius 12 Surface 底、padding 14,16、Gap 12。结构：包名（14 Bold）+「N 个技能」tag + 右侧 iconAction（重命名 ✎ / 删除 🗑，删除走 AlertDialog）→ 成员胶囊行（含 已丢失 态）+ ＋添加技能胶囊 → Divider → 「分配给：」行（12pt muted 前缀 + packAgentChip 开关胶囊）。</p>
+    <div class="mock-area">
+      <div class="a-card" style="width:440px;gap:12px">
+        <div class="title-row"><span class="name" style="font-size:14px">前端助手</span><span class="a-tag">3 个技能</span><span style="flex:1"></span><span class="a-icon-btn">✎</span><span class="a-icon-btn">🗑</span></div>
+        <div class="chips"><span class="a-chip-member">react <span class="a-chip-x">✕</span></span><span class="a-chip-member">vite <span class="a-chip-x">✕</span></span><span class="a-chip-member missing">⚠ old-css <span class="a-chip-x">✕</span></span><span class="a-chip-add">＋ 添加技能</span></div>
+        <div class="a-divider"></div>
+        <div class="chips" style="align-items:center"><span style="font-size:12px;color:var(--text-muted)">分配给：</span><span class="a-chip on">✓ 通用 Agent</span><span class="a-chip off">○ Claude</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== agentSkillCard ===================== -->
+  <h2 id="agent-skill-card">Agent 技能卡片 <code>agentSkillCard</code></h2>
+  <div class="card">
+    <h3>两列网格卡片（含操作按钮）<span class="pill interactive">含交互</span></h3>
+    <div class="src">agentskills.go:228 · 按钮 agentSkillRemove:282 / agentSkillImport:303</div>
+    <p class="desc">同 skillCard 的无边框 12 圆角规格。差异：名称行尾部带语义来源标签（agentSkillTag）；简介下是 monospace 11pt 路径（中心链接带 <code>→</code> 前缀显示解析目标）；底部右侧按类型给操作——中心链接给「移除」（灰边白底 26 高 + unlink 图标），真实目录/外部链接给「导入」（Accent 实心 26 高 + download 图标）。一切派生自文件系统（<code>scanAgentSkills</code> 构建时扫描）。</p>
+    <div class="mock-area">
+      <div class="a-card">
+        <div class="title-row"><span class="name">pdf</span><span class="a-tag gray-blue">技能中心</span></div>
+        <div class="desc2">从 PDF 中提取文本、表格与图片。</div>
+        <div class="path">→ ~/.aurora/skills/pdf</div>
+        <div style="display:flex;justify-content:flex-end"><span class="a-btn-secondary" style="height:26px;font-size:12px">⛓ 移除</span></div>
+      </div>
+      <div class="a-card">
+        <div class="title-row"><span class="name">notes</span><span class="a-tag green">真实目录</span></div>
+        <div class="desc2">本地笔记整理技能，还没收编进中心。</div>
+        <div class="path">~/.claude/skills/notes</div>
+        <div style="display:flex;justify-content:flex-end"><span class="a-btn-primary" style="height:26px;font-size:12px">⬇ 导入</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== agentRow ===================== -->
+  <h2 id="agent-row">Agent 列表行 <code>agentRow</code>（设置页）</h2>
+  <div class="card">
+    <h3>分组列表行（不导航，⋯ / 右键菜单）<span class="pill interactive">可交互</span></h3>
+    <div class="src">settings.go（agentList / agentRow / agentMenu）</div>
+    <p class="desc">2026-11 重构（HIG 分组列表，<code>lists-and-tables.md › Style</code>）：所有行装进<b>一个圆角 10 容器</b>（Surface 底 + 1px Border + Clip），行间 1px hairline 缩进 62px 与名称左缘对齐，不再是每行独立描边卡片。行结构：36px avatar → 名称（FontWeight 600，内置 agent 名称旁带 defaultTag）+ monospace 目录行（11px，无图标）→ 右侧「N 个技能」<b>纯文字</b>（12px muted，不再是 tag 胶囊）→ ⋯（24×24 无描边，默认 muted 55% 透明、行 hover 加深、自身 hover 加底色）。<b>行不是按钮、不导航</b>（Agent 技能页顶部胶囊负责切换 agent）；菜单双通道：⋯ 的 PopoverMenuButton 与整行 <code>ContextMenu</code>（右键），内容相同（打开 / 删除，内置 agent 只有打开）。列表下方 footer（11px muted）：配置目录 + 删除语义说明。</p>
+    <div class="mock-area on-white">
+      <div class="state-wrap">
+        <div class="a-row"><span class="a-avatar" style="background:#FF375F">通</span><span class="meta"><span class="n">通用 Agent <span class="a-tag blue" style="margin-left:4px">✓ 默认</span></span><span class="d">~/.agents/skills</span></span><span style="color:var(--text-muted);font-size:12px">3 个技能</span><span class="a-icon-btn">•••</span></div>
+        <span class="state-label">默认（⋯ 低对比常驻）</span>
+      </div>
+      <div class="state-wrap">
+        <div class="a-row hover"><span class="a-avatar" style="background:#0A84FF">Cl</span><span class="meta"><span class="n">Claude</span><span class="d">~/.claude/skills</span></span><span style="color:var(--text-muted);font-size:12px">0 个技能</span><span class="a-icon-btn bordered">•••</span></div>
+        <span class="state-label">行 hover（⋯ 加深，右键同菜单）</span>
+      </div>
+    </div>
+    <div class="hig"><b>HIG：</b><code>lists-and-tables.md</code>、<code>settings.md</code>（设置页为表单式布局、MaxWidth 640，与卡片页的内容区规范不同，是有意的例外）。</div>
+  </div>
+
+  <!-- ===================== presetRow ===================== -->
+  <h2 id="preset-row">预设列表行 <code>presetList</code></h2>
+  <div class="card">
+    <h3>弹窗内单选行 <span class="pill interactive">可交互</span></h3>
+    <div class="src">settings.go:383</div>
+    <p class="desc">padding 8,12、Radius 10、带边框，固定高 336 的 Scroll 列表。三态：默认（Border 1）→ hover SurfaceHover → 选中 Accent 边 + Accent.α08 底（比 agentRow 的 0.12 更弱，弹窗内的次级选择）。已添加的行禁用 + Surface 底 +「已添加」tag。36px avatar。</p>
+    <div class="mock-area on-white">
+      <div class="a-row" style="padding:8px 12px;width:360px"><span class="a-avatar" style="width:36px;height:36px;border-radius:9px;font-size:13px;background:#0A84FF">Cl</span><span class="meta"><span class="n">Claude</span><span class="d">~/.claude/skills</span></span></div>
+      <div class="a-row" style="padding:8px 12px;width:360px;border-color:var(--accent);background:rgba(37,99,235,.08)"><span class="a-avatar" style="width:36px;height:36px;border-radius:9px;font-size:13px;background:#BF5AF2">Ki</span><span class="meta"><span class="n">Kimi Code</span><span class="d">~/.kimi-code/skills</span></span></div>
+      <div class="a-row" style="padding:8px 12px;width:360px;background:var(--surface)"><span class="a-avatar" style="width:36px;height:36px;border-radius:9px;font-size:13px;background:#5E5CE6">Co</span><span class="meta"><span class="n">Codex</span><span class="d">~/.codex/skills</span></span><span class="a-tag">已添加</span></div>
+    </div>
+  </div>
+
+  <!-- ===================== parsedRow ===================== -->
+  <h2 id="parsed-row">解析结果行 <code>parsedRow</code>（导入弹窗）</h2>
+  <div class="card">
+    <h3>可勾选行 + 状态行 <span class="pill interactive">可交互</span></h3>
+    <div class="src">import.go:500 · 列表头 importParsedList import.go:458</div>
+    <p class="desc">padding 10,12、Radius 10、带边框、点击整行切换勾选。结构：Checkbox → 名称（13 Bold，hub 已有则带 Warning「已存在」徽章——导入即覆盖）→ 简介 11pt muted。列表头状态行：绿对勾图标 +「发现 N 个技能 · 已选 M 个」（13pt 500）+ 右侧 linkAction「全选 / 取消选择」。</p>
+    <div class="mock-area on-white">
+      <div class="a-parsed-row"><span class="a-checkbox on">✓</span><span class="meta" style="flex:1"><span style="font-size:13px;font-weight:700">pdf</span><span class="d" style="font-family:inherit;font-size:11px;color:var(--text-muted);display:block">从 PDF 中提取文本、表格与图片</span></span></div>
+      <div class="a-parsed-row"><span class="a-checkbox"></span><span class="meta" style="flex:1"><span style="font-size:13px;font-weight:700">docx</span> <span class="a-tag amber">⚠ 已存在</span><span class="d" style="font-family:inherit;font-size:11px;color:var(--text-muted);display:block">处理 Word 文档</span></span></div>
+    </div>
+  </div>
+
+  <!-- ===================== pickRow ===================== -->
+  <h2 id="pick-row">挑选列表行 <code>pickSkillRow</code>（添加技能弹窗）</h2>
+  <div class="card">
+    <h3>点击即加行 <span class="pill interactive">可交互</span></h3>
+    <div class="src">packs.go:476</div>
+    <p class="desc">padding 8,10、Radius 8、<b>无边框</b>（轻量列表），hover SurfaceHover。名称 13 Bold + 目录名后缀，简介 11pt muted 单行。点击即加入包，弹窗不关可连续添加；已加的行禁用、名称变 muted、尾部「已添加」tag。</p>
+    <div class="mock-area on-white">
+      <div class="a-row" style="padding:8px 10px;border:none;border-radius:8px;width:360px"><span class="meta"><span style="font-size:13px;font-weight:700">pdf <span style="font-size:11px;color:var(--text-muted);font-weight:400">(pdf-tools)</span></span><span class="d" style="font-family:inherit;font-size:11px">从 PDF 中提取文本</span></span></div>
+      <div class="a-row" style="padding:8px 10px;border:none;border-radius:8px;width:360px;background:transparent"><span class="meta"><span style="font-size:13px;font-weight:700;color:var(--text-muted)">docx</span><span class="d" style="font-family:inherit;font-size:11px">处理 Word 文档</span></span><span class="a-tag">已添加</span></div>
+    </div>
+  </div>
+
+  <!-- ===================== modal ===================== -->
+  <h2 id="modal">Modal 结构 <code>ui.Modal</code></h2>
+  <div class="card">
+    <h3>三段式弹窗骨架 <span class="pill interactive">含交互</span></h3>
+    <div class="src">统一结构：import.go:243（680 宽）· settings.go:333（492 宽）· packs.go:335（420 宽）/ 411（520 宽）</div>
+    <p class="desc"><code>ui.Modal(c, &amp;open, fn)</code> 自带遮罩、点外部/Esc 关闭、面板自带 <code>Padding(t.Space(5))</code>（20）。内容根加 <code>.Margin(-t.Space(5))</code> 抵消，让分隔线通栏，三段自带 padding：头部 <code>14,16,12,16</code>（标题 15 Bold + 右上 modalClose + 12pt muted 副标题）、内容 <code>14,16</code>、底部 <code>10,16</code>（右对齐按钮组），段间 <code>ui.Divider</code>。</p>
+    <div class="mock-area">
+      <div class="a-modal">
+        <div class="m-head"><div class="m-title" style="display:flex">新建技能包 <span style="flex:1"></span><span class="a-icon-btn" style="width:24px;height:24px">✕</span></div><div class="m-sub">给一组常用技能起个名字，之后可一次性分配给 agent。</div></div>
+        <div class="a-divider"></div>
+        <div class="m-body">内容区（表单 / 列表）…</div>
+        <div class="a-divider"></div>
+        <div class="m-foot"><span class="a-btn-secondary">取消</span><span class="a-btn-primary">创建</span></div>
+      </div>
+    </div>
+    <table class="specs">
+      <tr><th>弹窗</th><th>宽</th><th>特点</th></tr>
+      <tr><td>导入技能</td><td class="mono">680</td><td>左侧 180 宽方式列表（importMethodRow）+ 1px 分隔 + 右侧表单；底部左侧常驻说明「仅接受含 SKILL.md 的内容 · 复制到中心后再分配」（11pt muted）</td></tr>
+      <tr><td>添加 Agent</td><td class="mono">492</td><td>分段控件切 预设/自定义 两个标签页</td></tr>
+      <tr><td>新建/重命名技能包</td><td class="mono">420</td><td>新建与重命名共用；重名内联红字 + 禁用</td></tr>
+      <tr><td>添加技能到包</td><td class="mono">520</td><td>胶囊搜索 + 320 高 Scroll 列表，点击即加可连续添加，底部仅「完成」</td></tr>
+    </table>
+    <h3 style="margin-top:16px">导入方式行 <code>importMethodRow</code> <span class="pill interactive">可交互</span></h3>
+    <div class="src">import.go:312</div>
+    <p class="desc">弹窗左侧方式列表：padding 9,12、Radius 8、16px 图标 + 标题（13 500）/ 副标题（11）。选中=Accent 实心底白字（副标题 AccentText.α75），hover=SurfaceHover。解析中整列禁用（<code>Disabled</code> + OnClick 再判）。切换方式会 cancel 解析并清理临时文件。</p>
+    <div class="hig"><b>HIG：</b><code>modality.md</code>、<code>sheets.md</code>——单一短任务、明确出口（×/取消/Esc/点外部，本项目四种齐全）。</div>
+  </div>
+
+  <!-- ===================== alertDialog ===================== -->
+  <h2 id="alert-dialog">确认对话框 <code>ui.AlertDialog</code></h2>
+  <div class="card">
+    <h3>破坏性操作确认 <span class="pill interactive">可交互</span></h3>
+    <div class="src">hub.go:255（删除技能）· packs.go:392（删除技能包）</div>
+    <p class="desc">框架自带：<code>ui.AlertDialog(c, &amp;open, 标题, 消息, "取消", "删除")</code>，返回被点按钮索引（-1 未点，Esc=<code>ui.AlertDismissed</code>=-2），点按钮后自动关闭。<b>只有破坏性操作才用</b>（删除技能、删除技能包）；可撤销/轻量操作（移除链接、包内移除技能）直接执行不确认。文案说明后果：「将删除「X」以及所有 agent 中指向它的链接，此操作无法撤销。」</p>
+    <div class="hig"><b>HIG：</b><code>alerts.md</code>——alerts 要稀少、直接，破坏性不可逆操作给警告和 Cancel（本项目符合）；<code>undo-and-redo.md</code>。</div>
+  </div>
+
+  <!-- ===================== toast ===================== -->
+  <h2 id="toast">Toast <code>c.Toast</code></h2>
+  <div class="card">
+    <h3>窗口底部轻提示 <span class="pill feedback">反馈</span></h3>
+    <div class="src">框架自带 · 调用点：hub.go:294（chip）、packs.go:302、agentskills.go:293/313、import.go:295 等</div>
+    <p class="desc">操作结果的瞬时反馈（成功/冲突/失败），窗口底部数秒自动消失；同名消息自动刷新不堆叠。在 <code>Clicked()</code> 构建期分支里调用（OnClick 延迟执行亦可）。错误格式统一：<code>无法更新「X」：原因</code>；成功格式：<code>已导入「X」到技能中心</code>、<code>已导入 N 个技能</code>。</p>
+    <div class="mock-area" style="background:var(--surface-hover)">
+      <span class="a-toast">已导入「pdf」到技能中心</span>
+      <span class="a-toast">无法更新「pdf」：名称被占用</span>
+    </div>
+    <div class="hig"><b>HIG：</b><code>feedback.md</code>——反馈在界面内而非 alert（本项目符合）；<code>writing.md</code>（错误说发生了什么、不道歉）。</div>
+  </div>
+
+  <!-- ===================== empty ===================== -->
+  <h2 id="empty">空状态</h2>
+  <div class="card">
+    <h3>空列表 / 无匹配 <span class="pill static">静态</span></h3>
+    <div class="src">hub.go:158 · packs.go:134 · agentskills.go:163 · settings.go:222</div>
+    <p class="desc">垂直居中（<code>Column.Grow(1).Center().Gap(8)</code>）：可选 40px 彩色图标（技能包/Agent 技能/设置页空态带，技能中心空态不带）→ 主句（13pt muted，如「还没有技能」）→ 引导句（12pt muted，指向右上主按钮，如「点击右上角「导入技能」开始」）。搜索无匹配时主句变「没有匹配的 X」+「换个关键词试试」。</p>
+    <div class="mock-area">
+      <div class="a-empty"><span class="icon"></span><span style="font-size:13px">还没有技能包</span><span style="font-size:12px">点击右上角「新建技能包」开始</span></div>
+    </div>
+    <div class="hig"><b>HIG：</b><code>writing.md</code>、<code>feedback.md</code>——空屏邀请下一步动作（本项目符合）。</div>
+  </div>
+
+  <!-- ===================== improvements ===================== -->
+  <h2 id="improve-main">改进机会（HIG 视角）：值得改的三处</h2>
+  <p class="section-note">对照 apple-design 技能的 HIG 原文逐项评估后的结论。<b>2026-11 重构已落地其中 8 项</b>（带「已落地」标），未做的 2 项（错误内联化、侧栏自动收起）保留在「细节优化」末尾供以后参考。引用格式为 <code>文件.md › 小节</code>，原文见技能的 <code>references/hig/</code>。</p>
+
+  <div class="card improve high">
+    <h3>1. 菜单栏命令与全局快捷键缺失 <span class="pill sev-high">High</span> <span class="pill sev-keep">已落地</span></h3>
+    <div class="src">影响：main.go（窗口/菜单）、hub.go（搜索）、settings.go（设置）</div>
+    <p class="why"><b>现状：</b>已实现——见下「建议」即实现方案。<code>installMenu()</code>（main.go）装了 App / 编辑 / 视图 / 窗口菜单：App 菜单「设置…」⌘,、编辑菜单「搜索…」⌘F（经 <code>a.searchFocus</code> 传到当前页搜索框）、视图菜单「切换边栏」⌃⌘S（与顶栏折叠按钮共用 <code>toggleSidebar()</code>），菜单 Click 里 <code>w.Update(fn)</code> 改状态。</p>
+    <p class="why"><b>依据：</b><code>toolbars.md › Desktop (macOS)</code>："Make every toolbar item available as a command in the menu bar."（工具栏项不能只存在于工具栏）；<code>designing-for-macos.md › Best practices</code>："Handle keyboard shortcuts to help people accelerate actions and use keyboard-only work styles"；<code>sidebars.md › Best practices</code>："in macOS, you can include a show/hide button or add Show Sidebar and Hide Sidebar commands to your app's View menu"。</p>
+    <p class="fix"><b>建议：</b>补三个高频命令——<span class="kbd">⌘F</span> 聚焦当前页搜索框、<span class="kbd">⌘,</span> 打开设置页（macOS 标准，见 <code>settings.md › Best practices</code>）、View 菜单加 Toggle Sidebar（系统惯例 <span class="kbd">⌃⌘S</span>），与已有的折叠按钮同一状态源。桌面应用的「专业感」很大程度来自键盘可达性，这也是 <code>accessibility.md</code> 键盘-only 使用的前提。</p>
+  </div>
+
+  <div class="card improve">
+    <h3>2. 胶囊搜索框缺 Clear 按钮 <span class="pill sev-med">Medium</span> <span class="pill sev-keep">已落地</span></h3>
+    <div class="src">hub.go capsuleSearch · 影响全部四处搜索（技能中心/技能包/添加技能弹窗/Agent 技能）</div>
+    <p class="why"><b>现状：</b>已实现——<code>*value != ""</code> 时尾部条件渲染 16×16 清除按钮（key <code>clear:</code>+label），点击置空并 <code>input.Focus()</code>；胶囊 padding 相应改为 <code>0,6,0,12</code>。</p>
+    <p class="why"><b>依据：</b><code>search-fields.md</code> 对搜索框的定义："displays a Search icon, <b>a Clear button</b>, and placeholder text"——清除按钮是搜索框的标准组成部分。</p>
+    <div class="compare">
+      <div class="col"><span class="col-label">现状</span><span class="a-capsule-search">🔍 pdf</span></div>
+      <div class="col"><span class="col-label">建议（有内容时尾部出现 ×）</span><span class="a-capsule-search" style="justify-content:space-between">🔍 pdf <span class="a-chip-x" style="background:var(--surface-hover)">✕</span></span></div>
+    </div>
+    <p class="fix"><b>建议：</b><code>value != ""</code> 时条件渲染尾部 16×16 清除按钮（复用胶囊内 × 的样式），点击清空并保持焦点。改动小、四处搜索同时受益。</p>
+  </div>
+
+  <div class="card improve">
+    <h3>3. chip 开关胶囊仅靠颜色区分状态 <span class="pill sev-med">Medium</span> <span class="pill sev-keep">已落地</span></h3>
+    <div class="src">hub.go chip · packs.go packAgentChip</div>
+    <p class="why"><b>现状：</b>已实现——前缘图形区分状态：选中 10px <code>checkIcon</code> 对勾、未选中 10px <code>circleIcon</code> 空心圆；两态同尺寸，切换不改宽度（保持「状态切换不抖动」），未选中侧也不是空白占位。</p>
+    <p class="why"><b>依据：</b><code>toggles.md › Best practices</code>："Avoid relying solely on different colors to communicate state, because not everyone can perceive the differences."（这条同时是 <code>accessibility.md › Vision</code>「Convey information with more than color alone」的要求）。</p>
+    <div class="compare">
+      <div class="col"><span class="col-label">选中</span><span class="a-chip on">✓ Claude</span></div>
+      <div class="col"><span class="col-label">未选中（空心圆，不留空白）</span><span class="a-chip off">○ Kimi Code</span></div>
+    </div>
+  </div>
+
+  <h2 id="improve-details">改进机会：细节优化</h2>
+  <p class="section-note">不紧急，但都是 HIG 有明确依据的专业做法，适合随手带上。</p>
+
+  <div class="card improve">
+    <h3>打开弹窗的按钮加省略号 <span class="pill sev-med">Medium</span> <span class="pill sev-keep">已落地</span></h3>
+    <div class="src">hub.go「导入技能…」· packs.go「新建技能包…」「添加技能…」· settings.go「添加 Agent…」（均已改）</div>
+    <p class="why"><b>依据：</b><code>buttons.md › Push buttons</code>："Append a trailing ellipsis to the title when a push button opens another window, view, or app… an ellipsis in a control title signals that people can provide additional input." 这四个按钮都是打开弹窗收集输入，按 macOS 惯例应为「导入技能…」「新建技能包…」等；「解析」「创建」这类直接执行的按钮不加。</p>
+    <div class="compare">
+      <div class="col"><span class="col-label">现状</span><span class="a-btn-primary">导入技能</span></div>
+      <div class="col"><span class="col-label">建议</span><span class="a-btn-primary">导入技能…</span></div>
+    </div>
+  </div>
+
+  <div class="card improve">
+    <h3>Agent 选择器：agent 变多后改用 pop-up button <span class="pill sev-med">Medium</span> <span class="pill sev-keep">已回退</span></h3>
+    <div class="src">agentskills.go（曾为 agentPickMenu，2026-11 移除）</div>
+    <p class="why"><b>结论：</b>曾按本建议落地（&gt;5 个 agent 换成 pop-up 按钮），后被用户决策回退——一律用胶囊行，Wrap 自动换行，不折叠。用户更看重一眼看到全部 agent，宁可多占行高。</p>
+    <p class="why"><b>原依据（仍成立，但被产品决策覆盖）：</b><code>pop-up-buttons.md › Best practices</code> 与 <code>toggles.md › Radio buttons</code> 建议超过约 5 个互斥选项用 pop-up button。</p>
+    <div class="compare">
+      <div class="col"><span class="col-label">最终形态（所有数量）</span><span style="display:flex;flex-wrap:wrap;gap:6px;max-width:260px"><span class="a-chip-pick on">通用 Agent</span><span class="a-chip-pick off">Claude</span><span class="a-chip-pick off">Kimi</span><span class="a-chip-pick off">Codex</span><span class="a-chip-pick off">Pi</span><span class="a-chip-pick off">Qoder</span></span></div>
+    </div>
+  </div>
+
+  <div class="card improve">
+    <h3>卡片网格按宽度自适应列数 <span class="pill sev-med">Medium</span> <span class="pill sev-keep">已落地</span></h3>
+    <div class="src">main.go gridColumns · hub.go 与 agentskills.go 的网格（均按窗口宽度取 1/2/3 列）</div>
+    <p class="why"><b>现状：</b>已实现——<code>gridColumns(c.Size(), a.collapsed)</code>：内容区 &lt;620px 一列、&lt;1010px 两列、更宽三列；最小窗口 720（展开侧栏）时卡片不再挤成 215px。</p>
+    <p class="why"><b>依据：</b><code>layout.md › Adaptability</code>："Design a layout that adapts gracefully and consistently… People expect your experience to remain familiar when they… resize a window"。固定列数是「按设备而非可用空间设计」的变体。</p>
+    <p class="fix"><b>建议：</b>按内容区实际宽度选列数（如 &lt;560px 一列、560–1100px 两列、&gt;1100px 三列），或给卡片设最大宽度。窗口可自由缩放是 macOS 基本预期，这也是 1 处改动两处受益（hub 与 agent 页共用规律）。</p>
+  </div>
+
+  <div class="card improve">
+    <h3>卡片删除 ×：hover 之外的可达性 <span class="pill sev-med">Medium</span> <span class="pill sev-keep">已落地</span></h3>
+    <div class="src">hub.go skillCard</div>
+    <p class="why"><b>现状：</b>已实现——× 常驻渲染，默认低对比（<code>t.TextMuted.Alpha(0.55)</code>），hover 加底色加深；不再需要先悬停卡片才能发现删除入口，键盘与屏幕阅读器用户也能到达（Label 始终在）。</p>
+    <p class="why"><b>依据：</b><code>accessibility.md › Speech</code>："Let people use the keyboard alone to navigate and interact with your app"；<code>accessibility.md › Mobility</code>："Offer alternatives to gestures… offer onscreen ways to achieve the same outcome"。</p>
+    <p class="fix"><b>建议：</b>卡片获得焦点（focus-within）时同样渲染 ×；或常驻渲染但非 hover 时低对比（muted 30% alpha），hover 恢复全量。后者同时解决「新用户不知道卡片能删」的可发现问题。</p>
+  </div>
+
+  <div class="card improve low">
+    <h3>错误别走 Toast：成功瞬态、错误常驻 <span class="pill sev-low">Low</span></h3>
+    <div class="src">hub.go:297 · packs.go:311 · agentskills.go:295/316（错误均 <code>c.Toast</code>）</div>
+    <p class="why"><b>依据：</b><code>accessibility.md › Cognitive</code>："Minimize use of time-boxed interface elements… Prefer dismissing views with an explicit action"——失败信息几秒后消失，读得慢的用户和辅助技术用户可能错过；<code>feedback.md › Best practices</code> 也只要求「确认重要操作完成」（成功适合瞬态），错误应当「help them understand why」。</p>
+    <p class="fix"><b>建议：</b>成功/信息类保留 Toast（现状很好）；失败类改为操作现场的内联错误行（复用 <code>importErrRow</code> 的红字配方），或至少在 Toast 文案里给出可执行的下一步。改动集中在各 <code>Clicked()</code> 错误分支。</p>
+  </div>
+
+  <div class="card improve low">
+    <h3>胶囊内 × 热区 16×16 → 20×20 <span class="pill sev-low">Low</span> <span class="pill sev-keep">已落地</span></h3>
+    <div class="src">packs.go packSkillChip 内的移除按钮（已改为 20×20、图标 10px、padding 0,2,0,10）</div>
+    <p class="why"><b>依据：</b><code>accessibility.md › Mobility</code> 桌面控件尺寸表：macOS 默认 28×28、<b>最小 20×20</b>。16×16 低于最小值；24 高的胶囊里放一个 20×20 的 ×（上下各 2px）视觉密度不变，命中区大 56%。</p>
+  </div>
+
+  <div class="card improve low">
+    <h3>窗口缩窄时自动收起侧栏 <span class="pill sev-low">Low</span></h3>
+    <div class="src">main.go:93 view（折叠只有手动按钮）</div>
+    <p class="why"><b>依据：</b><code>sidebars.md › Desktop (macOS)</code>："Consider automatically hiding and revealing a sidebar when its container window resizes. For example, reducing the size of a Mail viewer window can automatically collapse its sidebar." 在 720 最小宽度附近，收起侧栏能多给内容 220px——正好配合上面的自适应列数。</p>
+    <p class="fix"><b>建议：</b>记住用户的手动选择，仅在用户未显式表态时跟随宽度自动折叠/展开；手动操作后尊重手动状态。</p>
+  </div>
+
+  <h2 id="keep-as-is">评估后保留现状（不做替代）</h2>
+  <p class="section-note">这些组件逐项对照过 HIG，现状已是更合适或同等专业的选择，<b>不建议改</b>——避免为改而改。</p>
+  <div class="card">
+    <h3>保留项与理由 <span class="pill sev-keep">保持</span></h3>
+    <table class="specs">
+      <tr><th>组件</th><th>评估结论</th></tr>
+      <tr><td>侧栏彩色方块图标</td><td><code>sidebars.md</code>（2026-06 更新）默认希望侧栏图标跟随系统 accent 色，但允许"sparingly"使用固定色表达含义。Aurora 四枚彩色 tile 是有意的品牌识别（参照 <code>branding.md</code> 在熟悉的尺寸/位置上做再样式化）。<b>保留</b>；若哪天想更"原生"，退路是单色 accent 符号，属于口味而非对错。</td></tr>
+      <tr><td>设置放在侧栏页（非独立设置窗口）</td><td><code>settings.md › Desktop (macOS)</code> 的独立设置窗口 + 工具栏 pane 是给「通用、低频」选项的；Aurora 的「设置」实际是 agent 管理（添加/打开目录/删除），属于任务性内容，<code>settings.md › Task-specific options</code> 恰恰要求这类选项"in the screens they affect"。<b>保留</b>；若以后出现真正的通用偏好（外观、更新等），再开独立 Settings 窗口并配 <span class="kbd">⌘,</span>。</td></tr>
+      <tr><td>搜索框在顶栏右侧（trailing）</td><td>正是 <code>search-fields.md › Tablet and desktop</code> 推荐的工具栏 trailing 位置；输入即过滤（"start search immediately"）也符合。<b>完全合规</b>。</td></tr>
+      <tr><td>顶栏布局（标题左、操作右、唯一主按钮）</td><td>符合 <code>toolbars.md › Item groupings</code>（trailing 放重要操作与搜索）和 <code>buttons.md</code>（每视图一个 prominent）。<b>合规</b>。</td></tr>
+      <tr><td>卡片网格展示技能</td><td><code>collections.md</code> 提示纯文本信息优先考虑表格/列表，但 Aurora 卡片承载每张卡独立的 agent 胶囊开关（逐项交互），网格的等高等宽让胶囊行对齐易扫——collection 用在这里有正当理由。<b>保留</b>；若技能数涨到数百，再考虑列表视图。</td></tr>
+      <tr><td>胶囊家族（开关/选择器/成员/添加）</td><td><code>toggles.md</code> 认可"buttons that behave like toggles"（用背景变化表达状态）；胶囊 24px 高满足桌面最小 20×20，且语义区分（开关两态描边/选择器实心填充/成员不可点）清晰。<b>保留</b>，仅按上面第 3 条补对勾。</td></tr>
+      <tr><td>Modal 三段式 + AlertDialog 确认删除</td><td>符合 <code>modality.md</code>（单一短任务、明确出口）与 <code>feedback.md</code>（不可逆操作才警告；删除技能包/技能是不可逆，包内移除可重做故不确认——分寸正确）。<b>合规</b>。</td></tr>
+      <tr><td>无边框卡片 + tag 表达来源</td><td>符合 <code>layout.md › Visual hierarchy</code>（用容器形状分组）与 <code>branding.md</code>（品牌色克制，蓝色只出现在主操作和选中态）。<b>合规</b>。</td></tr>
+    </table>
+  </div>
+
+  <!-- ===================== HIG map ===================== -->
+  <h2 id="hig-map">HIG 对照表</h2>
+  <p class="section-note">用 apple-design 技能审查本 UI 时，按下表加载 <code>references/hig/</code> 下的文件（技能要求「读后再引」，下表只是索引）。</p>
+  <div class="card">
+    <table class="specs">
+      <tr><th>Aurora 组件</th><th>对应 HIG 页面</th></tr>
+      <tr><td>窗口骨架 / vibrancy 侧栏</td><td class="mono">windows.md · sidebars.md · materials.md · liquid-glass.md</td></tr>
+      <tr><td>侧栏条目 / 折叠</td><td class="mono">sidebars.md · focus-and-selection.md</td></tr>
+      <tr><td>paneHeader（标题+操作）</td><td class="mono">toolbars.md</td></tr>
+      <tr><td>胶囊搜索 / 输入框</td><td class="mono">search-fields.md · searching.md · text-fields.md · entering-data.md</td></tr>
+      <tr><td>分段控件</td><td class="mono">segmented-controls.md</td></tr>
+      <tr><td>复选框</td><td class="mono">toggles.md</td></tr>
+      <tr><td>按钮 / iconAction / linkAction / ⋯菜单</td><td class="mono">buttons.md · menus.md · context-menus.md</td></tr>
+      <tr><td>胶囊家族（开关/选择器/成员/添加）</td><td class="mono">buttons.md（自定义控件，无直接对应——按「熟悉尺寸与行为的再样式化」审）</td></tr>
+      <tr><td>tag / 徽章 / avatar</td><td class="mono">labels.md · color.md</td></tr>
+      <tr><td>卡片网格（技能/技能包/Agent）</td><td class="mono">collections.md · boxes.md · scroll-views.md</td></tr>
+      <tr><td>列表行（agent/预设/解析/挑选）</td><td class="mono">lists-and-tables.md · focus-and-selection.md</td></tr>
+      <tr><td>Modal / AlertDialog</td><td class="mono">modality.md · sheets.md · alerts.md</td></tr>
+      <tr><td>Toast / 空状态 / 错误行</td><td class="mono">feedback.md · loading.md · writing.md</td></tr>
+      <tr><td>图标体系（Lucide 16px + 彩色方块）</td><td class="mono">icons.md · sf-symbols.md（对比参照）</td></tr>
+      <tr><td>全局</td><td class="mono">accessibility.md · layout.md · typography.md · color.md · dark-mode.md · designing-for-macos.md</td></tr>
+    </table>
+  </div>
+
+  <!-- ===================== checklist ===================== -->
+  <h2 id="checklist">优化前检查清单</h2>
+  <div class="card">
+    <p class="desc">改动任何组件前对照（来自 UI.md 设计原则与 apple-design 技能的审查框架）：</p>
+    <ul class="checklist">
+      <li><b>状态完整性</b>（UI.md 原则 2）：默认 / hover / 选中 / 焦点 / 禁用全部有定义；状态切换不引起布局抖动（边框恒宽、Absolute 定位的显隐控件）。</li>
+      <li><b>主题色</b>（UI.md 原则 4）：不写字面量，浅色变体用 Alpha 派生；深浅两套外观都验证。</li>
+      <li><b>一致性</b>：三个卡片页内容区规范一致（改一处改全部）；弹窗统一三段式结构；页面顶栏一律 paneHeader。</li>
+      <li><b>无障碍</b>（Lens 1）：icon-only 控件带 <code>.Label()</code>；字号不低于 10pt；点击区桌面最小 20×20（现状已达标）；语义不靠颜色单独传达（色都配了文字，开关胶囊另有对勾）。</li>
+      <li><b>验证</b>：视觉变更先临时 <code>render_*_test.go</code> 截图两种状态自查，再三件套 <code>gofmt -w . &amp;&amp; CGO_ENABLED=0 go test ./... &amp;&amp; go tool mygo vet .</code>，删临时文件。</li>
+      <li><b>同步文档</b>：改动涉及 UI.md 描述的规范时，同一改动里更新 UI.md；组件规格变化时更新本页。</li>
+    </ul>
+  </div>
+
+  <p style="margin-top:32px;font-size:11px;color:var(--text-muted)">
+    生成于 2026-11-04，同日按「改进机会」完成 UI 重构（菜单栏快捷键、搜索清除钮、胶囊对勾、省略号、pop-up 选择器、自适应列、常驻删除 ×、20×20 热区、设置页导航行）· 基线源码：main.go / hub.go / packs.go / agentskills.go / settings.go / import.go / icons.go · 规范：UI.md（控件配方）· HIG 索引：apple-design 技能 references/hig/
+  </p>
+</main>
+</div>
+</body>
+</html>

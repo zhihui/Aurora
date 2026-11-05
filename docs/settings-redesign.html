@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aurora 设置页重设计演示</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --surface: #ffffff;
+    --surface-hover: #f0f0f3;
+    --border: #e2e2e6;
+    --hairline: #ebebf0;
+    --text: #1d1d1f;
+    --muted: #86868b;
+    --accent: #0a84ff;
+    --accent-soft: rgba(10, 132, 255, .12);
+    --danger: #ff453a;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+    background: #e9e9ee; color: var(--text);
+    padding: 40px 24px 80px;
+    font-size: 13px;
+  }
+  .page { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .sub { color: var(--muted); margin-bottom: 32px; }
+  .sub code { font-family: var(--mono); font-size: 12px; }
+
+  h2 { font-size: 15px; font-weight: 700; margin: 36px 0 4px; }
+  h2 .cite { font-weight: 400; font-size: 12px; color: var(--muted); }
+  .note { color: var(--muted); font-size: 12px; margin-bottom: 14px; line-height: 1.6; }
+  .note b { color: var(--text); font-weight: 600; }
+
+  /* ---- mock window ---- */
+  .window {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 12px 32px rgba(0,0,0,.08);
+  }
+  .titlebar {
+    height: 52px; display: flex; align-items: center; padding: 0 20px;
+    border-bottom: 1px solid var(--hairline); background: var(--surface);
+  }
+  .titlebar .t { font-size: 15px; font-weight: 700; flex: 1; }
+  .btn-primary {
+    background: var(--accent); color: #fff; border: 0; border-radius: 7px;
+    font-size: 13px; font-weight: 500; padding: 5px 12px; font-family: inherit;
+  }
+  .content { padding: 24px 28px; max-width: 692px; }
+
+  .sec-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .sec-head .name { font-size: 13px; font-weight: 700; }
+  .count {
+    background: var(--surface-hover); color: var(--muted); border-radius: 8px;
+    font-size: 11px; font-weight: 600; padding: 1px 7px;
+  }
+  .sec-desc { color: var(--muted); font-size: 12px; margin-bottom: 14px; }
+
+  /* ---- current style: per-row bordered cards ---- */
+  .old-row {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 16px; margin-bottom: 14px;
+  }
+  .avatar {
+    width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 15px; font-weight: 600;
+  }
+  .old-row .meta { flex: 1; min-width: 0; }
+  .old-row .nm { font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+  .default-badge {
+    background: var(--accent-soft); color: var(--accent); font-size: 10px; font-weight: 600;
+    border-radius: 6px; padding: 2px 8px; display: inline-flex; align-items: center; gap: 3px;
+  }
+  .old-row .dir { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .pill-tag {
+    background: var(--surface-hover); color: var(--muted); border-radius: 5px;
+    font-size: 10px; font-weight: 500; padding: 2px 8px; white-space: nowrap;
+  }
+  .ellipsis-btn {
+    width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--surface); color: var(--muted); font-size: 14px; line-height: 1;
+    display: flex; align-items: center; justify-content: center; letter-spacing: 1px;
+  }
+  .chev { color: var(--muted); font-size: 14px; }
+
+  .mark { position: relative; }
+  .mark::after {
+    content: attr(data-mark); position: absolute; right: -6px; top: -10px;
+    background: var(--danger); color: #fff; font-size: 10px; font-weight: 600;
+    border-radius: 8px; padding: 1px 6px; z-index: 2;
+  }
+
+  /* ---- new style: inset grouped list ---- */
+  .group-list {
+    background: var(--surface); border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--hairline);
+  }
+  .g-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 9px 14px; position: relative; cursor: default;
+  }
+  .g-row + .g-row::before {
+    content: ""; position: absolute; left: 62px; right: 0; top: 0;
+    height: 1px; background: var(--hairline);
+  }
+  .g-row:hover { background: var(--surface-hover); }
+  .g-row .avatar { width: 36px; height: 36px; border-radius: 9px; font-size: 14px; }
+  .g-row .meta { flex: 1; min-width: 0; }
+  .g-row .nm { font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+  .g-row .dir { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .g-row .count-t { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .g-row .more {
+    width: 24px; height: 24px; border: 0; border-radius: 5px; background: transparent;
+    color: var(--muted); font-size: 13px; letter-spacing: 1px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    opacity: .55; transition: opacity .12s;
+  }
+  .g-row:hover .more { opacity: 1; }
+  .g-row .more:hover { background: rgba(0,0,0,.06); color: var(--text); }
+  .list-footer { color: var(--muted); font-size: 11px; margin-top: 8px; padding: 0 4px; line-height: 1.5; }
+  .list-footer code { font-family: var(--mono); }
+
+  /* ---- context menu ---- */
+  .ctx-wrap { position: relative; }
+  .ctx-menu {
+    position: absolute; right: 8px; top: 40px; z-index: 5;
+    background: rgba(252,252,253,.96); backdrop-filter: blur(20px);
+    border: 1px solid var(--hairline); border-radius: 8px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.16);
+    padding: 4px; min-width: 140px;
+  }
+  .ctx-menu .mi { padding: 4px 12px; border-radius: 5px; font-size: 13px; }
+  .ctx-menu .mi:hover { background: var(--accent); color: #fff; }
+  .ctx-menu .sep { height: 1px; background: var(--hairline); margin: 4px 10px; }
+  .ctx-menu .mi.danger { color: var(--danger); }
+  .ctx-menu .mi.danger:hover { background: var(--danger); color: #fff; }
+
+  .states { display: flex; gap: 16px; flex-wrap: wrap; }
+  .state-card { flex: 1; min-width: 380px; }
+  .state-label { font-size: 11px; color: var(--muted); margin: 8px 2px 0; }
+
+  .anno { font-size: 12px; color: var(--muted); line-height: 1.7; margin-top: 10px; }
+  .anno li { margin-left: 18px; margin-bottom: 3px; }
+  .anno b { color: var(--text); font-weight: 600; }
+  .anno code { font-family: var(--mono); font-size: 11px; background: rgba(0,0,0,.05); border-radius: 4px; padding: 1px 4px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>设置页重设计演示</h1>
+  <p class="sub">Aurora · 仅 <code>settings.go</code> 内容区 · 顶栏（标题 + 添加 Agent…）与其他页面一致，不动</p>
+
+  <!-- ================= 现状 ================= -->
+  <h2>现状 <span class="cite">—— 每行一张描边卡片，尾部三个控件</span></h2>
+  <p class="note">问题：<b>①</b> 每行独立描边卡片，行间 14px 空白 + 描边是双重分隔，视觉噪音大；
+  <b>②</b> 行尾「N 个技能」胶囊 + ⋯ 按钮 + chevron 三个控件争注意力；
+  <b>③</b> 每行重复的文件夹图标不携带信息；<b>④</b> 配置目录路径占据头区一行，是工程细节。</p>
+  <div class="window">
+    <div class="titlebar"><span class="t">设置</span><button class="btn-primary">添加 Agent…</button></div>
+    <div class="content">
+      <div class="sec-head"><span class="name">Agents</span><span class="count">4</span></div>
+      <div class="sec-desc">添加需要管理技能的 agent，以及它们的技能配置目录。<br>配置目录：~/.aurora</div>
+      <div class="old-row">
+        <div class="avatar" style="background:#30d158">通</div>
+        <div class="meta">
+          <div class="nm">通用 Agent <span class="default-badge">✓ 默认</span></div>
+          <div class="dir">🗀 ~/.agents/skills</div>
+        </div>
+        <span class="pill-tag mark" data-mark="②">1 个技能</span>
+        <span class="ellipsis-btn mark" data-mark="②">•••</span>
+        <span class="chev">›</span>
+      </div>
+      <div class="old-row">
+        <div class="avatar" style="background:#ff375f">Cl</div>
+        <div class="meta">
+          <div class="nm">Claude</div>
+          <div class="dir">🗀 ~/.claude/skills</div>
+        </div>
+        <span class="pill-tag">3 个技能</span>
+        <span class="ellipsis-btn">•••</span>
+        <span class="chev">›</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 新设计 ================= -->
+  <h2>新设计 <span class="cite">—— macOS 分组列表（inset grouped list）</span></h2>
+  <p class="note">一个圆角容器装所有行，hairline 分隔线缩进对齐文字（<code>lists-and-tables.md › Style</code>：
+  macOS 用分组样式「表达分组与层级」；<code>layout.md › Group related items</code>：用容器形状表达关联，而不是给每项都加框）。</p>
+  <div class="window">
+    <div class="titlebar"><span class="t">设置</span><button class="btn-primary">添加 Agent…</button></div>
+    <div class="content">
+      <div class="sec-head"><span class="name">Agents</span><span class="count">4</span></div>
+      <div class="sec-desc">添加需要管理技能的 agent，以及它们的技能配置目录。</div>
+      <div class="group-list">
+        <div class="g-row">
+          <div class="avatar" style="background:#30d158">通</div>
+          <div class="meta">
+            <div class="nm">通用 Agent <span class="default-badge">✓ 默认</span></div>
+            <div class="dir">~/.agents/skills</div>
+          </div>
+          <span class="count-t">1 个技能</span>
+          <button class="more">•••</button>
+        </div>
+        <div class="g-row" style="background:var(--surface-hover)">
+          <div class="avatar" style="background:#ff375f">Cl</div>
+          <div class="meta">
+            <div class="nm">Claude</div>
+            <div class="dir">~/.claude/skills</div>
+          </div>
+          <span class="count-t">3 个技能</span>
+          <button class="more" style="opacity:1">•••</button>
+        </div>
+        <div class="g-row">
+          <div class="avatar" style="background:#5e5ce6">Ki</div>
+          <div class="meta">
+            <div class="nm">Kimi Code</div>
+            <div class="dir">~/.kimi-code/skills</div>
+          </div>
+          <span class="count-t">5 个技能</span>
+          <button class="more">•••</button>
+        </div>
+        <div class="g-row">
+          <div class="avatar" style="background:#ff9f0a">Wo</div>
+          <div class="meta">
+            <div class="nm">Work Buddy</div>
+            <div class="dir">~/.workbuddy/skills</div>
+          </div>
+          <span class="count-t">0 个技能</span>
+          <button class="more">•••</button>
+        </div>
+      </div>
+      <div class="list-footer">配置目录：<code>~/.aurora</code> · 删除 agent 只移除配置，不动目录。右键任意行可打开操作菜单。</div>
+    </div>
+  </div>
+  <ul class="anno">
+    <li><b>分隔线缩进 62px</b>（14 padding + 36 头像 + 12 间距），与名称文字左缘对齐——缩进表达层级（<code>layout.md</code>）。</li>
+    <li><b>「N 个技能」从胶囊降为纯文字</b> 12pt muted：它是次要信息，胶囊的底色块在每行重复是噪音（设计原则 › Simplicity）。</li>
+    <li><b>⋯ 按钮常驻但低对比</b>（默认 55% 透明、行 hover 加深、自身 hover 加底色，与技能卡片 × 同一约定）；整行右键弹出同一菜单（macOS 用户期望右键菜单，MyGo 有 <code>ContextMenu</code> API）。</li>
+    <li><b>行不再是按钮、不导航、无 chevron</b>：去 Agent 技能页改由该页顶部的 agent 胶囊负责（此前已改为全量平铺）。</li>
+    <li><b>路径行去掉文件夹图标</b>、字号 12→11 mono（macOS 最小 10pt，<code>typography.md</code>），行高 64→54，列表更紧凑。</li>
+    <li><b>配置目录挪到列表下方 footer</b>（分组列表的 footer 惯例），头区只剩一行说明。</li>
+  </ul>
+
+  <!-- ================= 状态 ================= -->
+  <h2>交互状态</h2>
+  <div class="states">
+    <div class="state-card">
+      <div class="window">
+        <div class="content" style="padding-bottom:118px;position:relative">
+          <div class="group-list">
+            <div class="g-row" style="background:var(--surface-hover)">
+              <div class="avatar" style="background:#ff375f">Cl</div>
+              <div class="meta">
+                <div class="nm">Claude</div>
+                <div class="dir">~/.claude/skills</div>
+              </div>
+              <span class="count-t">3 个技能</span>
+              <button class="more" style="opacity:1">•••</button>
+            </div>
+          </div>
+          <div class="ctx-menu" style="right:36px;top:64px">
+            <div class="mi">打开</div>
+            <div class="sep"></div>
+            <div class="mi danger">删除</div>
+          </div>
+        </div>
+      </div>
+      <p class="state-label">右键（或 ⋯）弹出操作菜单：打开 / 删除；内置 agent 只有「打开」</p>
+    </div>
+    <div class="state-card">
+      <div class="window">
+        <div class="content" style="text-align:center;padding:60px 28px">
+          <div style="font-size:32px;margin-bottom:10px">🤖</div>
+          <div style="color:var(--muted);font-size:13px;margin-bottom:4px">还没有添加任何 agent</div>
+          <div style="color:var(--muted);font-size:12px">点击右上角「添加 Agent」开始</div>
+        </div>
+      </div>
+      <p class="state-label">空状态维持现状（本来就符合规范）</p>
+    </div>
+  </div>
+
+  <!-- ================= 不变的部分 ================= -->
+  <h2>保持不变</h2>
+  <ul class="anno">
+    <li>顶栏「添加 Agent…」主按钮、添加弹窗、头像配色（本应用的识别点）、默认徽章。</li>
+    <li>行点击跳 Agent 技能页的功能<b>移除</b>（用户决策）：查看 agent 技能统一走 Agent 技能页顶部的胶囊选择器。</li>
+    <li>主题变量全部沿用（<code>t.Surface</code>/<code>t.SurfaceHover</code>/<code>t.Border</code>/<code>t.TextMuted</code>），深色模式自动成立。</li>
+  </ul>
+
+</div>
+</body>
+</html>
