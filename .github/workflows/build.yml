@@ -51,15 +51,22 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           pattern: aurora-*
+          path: dist
           merge-multiple: true
       - run: |
+          cd dist
           ls -la
           shopt -s nullglob
           files=(*.dmg *.exe *.deb *.tar.gz)
           echo "release files: ${files[@]}"
-          gh release create "${{ github.ref_name }}" "${files[@]}" --title "Aurora ${{ github.ref_name }}" --generate-notes
+          if ! out=$(gh release create "${{ github.ref_name }}" "${files[@]}" --title "Aurora ${{ github.ref_name }}" --generate-notes 2>&1); then
+            printf '### Release failed\n```\n%s\n```\n' "$out" >> "$GITHUB_STEP_SUMMARY"
+            echo "$out"
+            exit 1
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
