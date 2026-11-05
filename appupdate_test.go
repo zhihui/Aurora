@@ -45,7 +45,7 @@ func TestCheckAppUpdateFound(t *testing.T) {
 	applied, _ := stubAppUpdate(t, up, nil, nil)
 
 	a := &app{selected: "settings", focusSide: "sidebar"}
-	tt := ui.NewTester(a.view, 1000, 640)
+	tt := ui.NewTester(a.view, 1000, 900)
 	if !tt.HasText("0.1.0") {
 		t.Fatalf("no current version in %q", tt.Texts())
 	}
@@ -69,7 +69,7 @@ func TestCheckAppUpdateNone(t *testing.T) {
 	applied, _ := stubAppUpdate(t, nil, nil, nil)
 
 	a := &app{selected: "settings", focusSide: "sidebar"}
-	tt := ui.NewTester(a.view, 1000, 640)
+	tt := ui.NewTester(a.view, 1000, 900)
 	if err := tt.Click("检查更新"); err != nil {
 		t.Fatal(err)
 	}
@@ -89,7 +89,7 @@ func TestCheckAppUpdateErr(t *testing.T) {
 	applied, _ := stubAppUpdate(t, nil, errors.New("network down"), nil)
 
 	a := &app{selected: "settings", focusSide: "sidebar"}
-	tt := ui.NewTester(a.view, 1000, 640)
+	tt := ui.NewTester(a.view, 1000, 900)
 	if err := tt.Click("检查更新"); err != nil {
 		t.Fatal(err)
 	}
@@ -118,7 +118,7 @@ func TestInstallAppUpdate(t *testing.T) {
 	applied, relaunched := stubAppUpdate(t, up, nil, nil)
 
 	a := &app{selected: "settings", focusSide: "sidebar"}
-	tt := ui.NewTester(a.view, 1000, 640)
+	tt := ui.NewTester(a.view, 1000, 900)
 	if err := tt.Click("检查更新"); err != nil {
 		t.Fatal(err)
 	}
@@ -152,7 +152,7 @@ func TestInstallAppUpdateErr(t *testing.T) {
 	applied, _ := stubAppUpdate(t, up, nil, fmt.Errorf("签名校验失败"))
 
 	a := &app{selected: "settings", focusSide: "sidebar"}
-	tt := ui.NewTester(a.view, 1000, 640)
+	tt := ui.NewTester(a.view, 1000, 900)
 	a.checkAppUpdate(true)
 	<-applied
 	tt.Frame()
@@ -184,7 +184,7 @@ func TestAppUpdateDisabled(t *testing.T) {
 	appUpdateCheck = func(context.Context) (*mygo.Update, error) { called = true; return nil, nil }
 
 	a := &app{selected: "settings", focusSide: "sidebar"}
-	tt := ui.NewTester(a.view, 1000, 640)
+	tt := ui.NewTester(a.view, 1000, 900)
 	if !tt.HasText("开发构建不包含自动更新") {
 		t.Errorf("no hint in %q", tt.Texts())
 	}
