@@ -59,9 +59,9 @@ jobs:
           merge-multiple: true
       - run: |
           cd dist
-          ls -la
-          shopt -s nullglob
-          files=(*.dmg *.exe *.deb *.tar.gz)
+          ls -laR
+          shopt -s nullglob globstar
+          files=(**/*.dmg **/*.exe **/*.deb **/*.tar.gz)
           echo "release files: ${files[@]}"
           if ! out=$(gh release create "${{ github.ref_name }}" "${files[@]}" --title "Aurora ${{ github.ref_name }}" --generate-notes 2>&1); then
             printf '### Release failed\n```\n%s\n```\n' "$out" >> "$GITHUB_STEP_SUMMARY"
