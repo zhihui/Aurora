@@ -72,7 +72,23 @@ var (
 		`<circle cx="13" cy="8" r="1.3" fill="currentColor"/>`)
 	alertIcon = lucide(`<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>` +
 		`<path d="M12 9v4"/><path d="M12 17h.01"/>`)
+
+	//go:embed resources/icon-128.png
+	appIconPNG []byte
+
+	// appIcon is the app's logo of the sidebar's brand row: a 128px
+	// downscale of resources/icon.png (the packaging icon), small enough
+	// to embed.
+	appIcon = mustImage(appIconPNG)
 )
+
+func mustImage(b []byte) ui.ImageSource {
+	src, err := ui.DecodeImage(b)
+	if err != nil {
+		panic(err)
+	}
+	return src
+}
 
 func tile(svg string) *ui.SVG {
 	return ui.MustParseSVG([]byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">` + svg + `</svg>`))

@@ -13,7 +13,8 @@
 
 - **窗口**：`TitleBarHiddenInset` + `VibrancySidebar`（红绿灯嵌入侧栏、毛玻璃），参考 MyGo 源码里的 `examples/vibrancy`（本项目的布局蓝本）。有 vibrancy 时根元素和侧栏背景设 `ui.Transparent`。
 - **菜单栏**：`installMenu()`（main.go，`WhenReady` 里调用）把命令放进菜单栏——App 菜单的「设置…」（⌘, 跳设置页）、编辑菜单的「搜索…」（⌘F 聚焦当前页搜索框，经 `a.searchFocus` 传递）、视图菜单的「切换边栏」（⌃⌘S，与顶栏折叠按钮共用 `toggleSidebar()`）。菜单 Click 里用 `w.Update(func(){…})` 改状态并重绘。新增页面级命令时在这里补。
-- **页面顶栏**：一律用 `paneHeader(c, 标题, actions)`（main.go），不要自己写。它处理折叠侧栏后的左内边距（`headerLead()` = `TitleBar().Left+48`，让到红绿灯和折叠按钮右侧；展开时为 20）。actions 为页面的右上操作区（搜索框、主按钮），无操作传 nil。
+- **页面顶栏**：一律用 `paneHeader(c, 标题, actions)`（main.go），不要自己写。它的第一个子元素是侧栏折叠按钮（32×28 图标按钮，菜单 ⌃⌘S 共用 `toggleSidebar()`），之后是标题。左内边距 `headerLead()`：折叠时 `max(TitleBar().Left+8, 20)`（macOS 让开叠在内容区左缘的红绿灯），展开时 20；右内边距 `headerTail()` = `TitleBar().Right+20`——Windows/Linux 的最小化/最大化/关闭按钮叠在窗口右上角（macOS 的 `Right` 为 0，退化为 20）。actions 为页面的右上操作区（搜索框、主按钮），无操作传 nil。
+- **侧栏品牌行**：侧栏顶部是 app 图标（`appIcon`，`resources/icon-128.png` 内嵌解码，`Radius(6).Clip()` 圆角）+ 名称「Aurora」（13pt Bold）。macOS 上红绿灯占侧栏顶部 52 高（`TitleBar().Left > 0` 时先垫一个 DragWindow 盒），品牌行在其下；Windows/Linux 窗口按钮在右上角，品牌行直接置顶（上 padding 加大到 14）。品牌行本身 `DragWindow()` 可拖窗口。
 - **内容区**：卡片类页面（技能中心/技能包/Agent 技能）的滚动内容统一 `Padding(16, 28, 24, 28)` + `Gap(14)`，第一行通常是 12pt muted 的页面提示语；三个页面必须保持一致，改一处就改全部。设置页是表单式布局，用 `Padding(24, 28, 0, 28)` + `MaxWidth(640)`，是例外。
 - **网格列数自适应**：卡片网格（技能中心、Agent 技能）的列数用 `gridColumns(c.Size(), a.collapsed)`（main.go）按窗口宽度取 1/2/3 列，不写死 `Columns(2)`（layout.md › Adaptability）。
 - **弹窗**：`ui.Modal(c, &open, fn)` 自带遮罩、点外部/Escape 关闭。**Modal 面板自带 `Padding(t.Space(5))`（20）**，弹窗内容分 section（头部/内容/底部）且分隔线要通栏时，给内容根元素加 `.Margin(-t.Space(5))` 抵消，各 section 自带 padding（头 `14,16,12,16`、内容 `14,16`、底 `10,16`），section 之间 `ui.Divider`——所有弹窗（`import.go`、`settings.go`、`packs.go`）都是这个结构。右上角关闭 × 用 `modalClose(c, &open)`（settings.go）。

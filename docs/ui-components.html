@@ -351,17 +351,18 @@
     <h3><code>app.view</code> <span class="pill static">结构</span></h3>
     <div class="src">main.go:93 · main.go:253（窗口配置）</div>
     <pre class="layout-ascii">┌────────────────────────────────────────────────┐
-│ ●●●  [icon] 侧栏 220 │  paneHeader 52 (DragWindow) │  ← TitleBarHiddenInset
-│      ui.Sidebar      ├────────────────────────────┤     红绿灯嵌入侧栏
-│      （vibrancy      │                            │
-│       毛玻璃）        │   pane（Scroll + 内容区）   │
-│                      │                            │
+│ ●●●                │  [⇤] paneHeader 52 (DragWindow) │  ← TitleBarHiddenInset
+│ [logo] Aurora      ├────────────────────────────┤     红绿灯嵌入侧栏
+│      ui.Sidebar    │                            │     品牌行在红绿灯下方
+│      （vibrancy     │   pane（Scroll + 内容区）   │     （Win/Linux 置顶）
+│       毛玻璃）       │                            │
 └────────────────────────────────────────────────┘</pre>
     <table class="specs">
       <tr><th>要点</th><th>说明</th></tr>
       <tr><td>窗口</td><td><code>TitleBarHiddenInset</code> + <code>VibrancySidebar</code>；1000×640，最小 720×480；<code>StateKey:"main"</code> 记忆位置</td></tr>
       <tr><td>vibrancy</td><td>有 vibrancy 时根元素与侧栏背景设 <code>ui.Transparent</code>，否则侧栏 <code>t.Surface</code>、内容 <code>t.Background</code></td></tr>
-      <tr><td>折叠</td><td>侧栏 250ms 动画滑出（<code>Animate("sidebar",…)</code>），剩余 1px <code>t.Border</code> 分隔线随宽度隐藏；折叠按钮绝对定位 <code>Left(max(bar.Left+8, w-40))</code> 跟随右缘、收起后停靠红绿灯旁（32×28，Radius 6，hover SurfaceHover）</td></tr>
+      <tr><td>折叠</td><td>侧栏 250ms 动画滑出（<code>Animate("sidebar",…)</code>），剩余 1px <code>t.Border</code> 分隔线随宽度隐藏；折叠按钮在 paneHeader 最左（32×28，Radius 6，hover SurfaceHover），折叠后左内边距 <code>max(TitleBar().Left+8, 20)</code> 让开叠在内容区左缘的红绿灯</td></tr>
+      <tr><td>品牌行</td><td>侧栏顶部：圆角 logo（<code>appIcon</code>，resources/icon-128.png 内嵌，<code>Radius(6).Clip()</code>）+ 「Aurora」13pt Bold，整行 <code>DragWindow()</code>；macOS 红绿灯占顶部 52 高、品牌行在其下，Windows/Linux 按钮在右上角、品牌行置顶（上 padding 14）</td></tr>
       <tr><td>焦点</td><td><code>FocusBind(&amp;a.focusSide,"sidebar")</code>，启动自带焦点，展开时恢复——框架默认侧栏失焦后选中项变灰底，本项目强制无条件蓝底</td></tr>
       <tr><td>菜单栏</td><td><code>installMenu()</code>（main.go）：App 菜单「设置…」⌘,、编辑菜单「搜索…」⌘F（经 <code>a.searchFocus</code> 聚焦当前页搜索框）、视图菜单「切换边栏」⌃⌘S（与顶栏折叠按钮共用 <code>toggleSidebar()</code>）；菜单 Click 里 <code>w.Update(fn)</code> 改状态并重绘</td></tr>
     </table>
@@ -395,8 +396,8 @@
   <h2 id="pane-header">页面顶栏 <code>paneHeader</code></h2>
   <div class="card">
     <h3>paneHeader <span class="pill static">结构</span></h3>
-    <div class="src">main.go:194 · headerLead main.go:207</div>
-    <p class="desc"><b>所有页面顶栏必须用它</b>。高 52（titleBarHeight），可拖拽窗口（<code>DragWindow()</code>）。标题 15pt Bold + 右侧 actions（搜索框、主按钮）。侧栏折叠时左内边距变为 <code>TitleBar().Left+48</code> 让开红绿灯与折叠按钮，展开时 20。顶栏下紧跟 <code>ui.Divider</code>。</p>
+    <div class="src">main.go:234 · headerLead/headerTail main.go:247</div>
+    <p class="desc"><b>所有页面顶栏必须用它</b>。高 52（titleBarHeight），可拖拽窗口（<code>DragWindow()</code>）。最左是侧栏折叠按钮（32×28 图标按钮），之后是标题 15pt Bold + 右侧 actions（搜索框、主按钮）。侧栏折叠时左内边距变为 <code>max(TitleBar().Left+8, 20)</code> 让开红绿灯，展开时 20；右内边距为 <code>TitleBar().Right+20</code>，让开 Windows/Linux 右上角的最小化/最大化/关闭按钮（macOS 的 Right 为 0）。顶栏下紧跟 <code>ui.Divider</code>。</p>
     <div class="mock-area on-white" style="align-items:center">
       <div style="flex:1;min-width:200px;display:flex;align-items:center;gap:10px;height:52px;padding:0 20px;border-bottom:1px solid var(--border);width:100%">
         <span style="font-size:15px;font-weight:700;flex:1">技能中心</span>

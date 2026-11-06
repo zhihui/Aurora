@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	appName        = "Aurora"
 	titleBarHeight = 52 // the height of an inset title bar
 	sidebarWidth   = 220
 )
@@ -140,7 +141,6 @@ func (a *app) view(c *ui.Context) {
 	if vibrant {
 		c.Root().Background(ui.Transparent)
 	}
-	bar := c.TitleBar()
 	row := ui.Row(c).Fill().AlignItems(ui.Stretch)
 	shown := row.Animate("sidebar", b2f(!a.collapsed), 250*time.Millisecond)
 	w := sidebarWidth * shown
@@ -159,22 +159,6 @@ func (a *app) view(c *ui.Context) {
 		a.pane(c)
 	})
 
-	// At the right edge of the sidebar's top row while it shows, next to
-	// the window controls while it hides.
-	label := "Hide Sidebar"
-	if a.collapsed {
-		label = "Show Sidebar"
-	}
-	toggle := ui.ButtonBase(c.Key("toggle")).Absolute().Left(max(bar.Left+8, w-40)).Top((titleBarHeight-28)/2).Size(32, 28).
-		Radius(6).Center().TextColor(t.TextMuted).Label(label).Tooltip(label)
-	if toggle.Hovered() {
-		toggle.Background(t.SurfaceHover)
-	}
-	toggle.Children(func() { ui.Icon(c, sidebarIcon).Size(16, 16) })
-	if toggle.Clicked() {
-		a.toggleSidebar()
-	}
-
 	a.addAgentModal(c)
 	a.importSkillModal(c)
 	a.updateModal(c)
@@ -186,10 +170,22 @@ func (a *app) view(c *ui.Context) {
 	a.pickSkillsModal(c)
 }
 
-// sidebar is the items to choose from, under the room the window controls
-// take.
+// sidebar is the brand (the app's logo and name) and the items to choose
+// from. On macOS the traffic lights take the top, so the brand sits below
+// them; where the window controls are on the right (Windows, Linux), the
+// brand tops the sidebar.
 func (a *app) sidebar(c *ui.Context, vibrant bool) {
-	ui.Box(c).Height(titleBarHeight).Shrink(0).DragWindow()
+	if c.TitleBar().Left > 0 {
+		ui.Box(c).Height(titleBarHeight).Shrink(0).DragWindow()
+	}
+	brand := ui.Row(c).Shrink(0).AlignItems(ui.Center).Gap(8).Padding(4, 0, 8, 16).DragWindow()
+	if c.TitleBar().Left == 0 {
+		brand.Padding(14, 0, 8, 16)
+	}
+	brand.Children(func() {
+		ui.Image(c, appIcon).Size(24, 24).Radius(6).Clip()
+		ui.Text(c, appName).FontSize(13).Bold().SingleLine()
+	})
 	list := ui.Sidebar(c, &a.selected, func() {
 		for _, it := range menuItems {
 			a.item(c, it)
@@ -227,12 +223,28 @@ func (a *app) item(c *ui.Context, it item) {
 	})
 }
 
-// paneHeader is the top row of a pane: the title and the pane's actions.
-// While the sidebar hides, the window controls and the sidebar's toggle
-// sit over the pane's left edge, so the title starts right of the
-// toggle; it starts at the pane's edge otherwise.
+// paneHeader is the top row of a pane: the sidebar's toggle, the title
+// and the pane's actions. While the sidebar hides, the window controls
+// sit over the pane's left edge (macOS), so the row starts right of
+// them. On Windows and Linux the window buttons sit over the pane's
+// right edge, so the actions start left of them.
 func (a *app) paneHeader(c *ui.Context, title string, actions func()) {
-	ui.Row(c).Height(titleBarHeight).Shrink(0).AlignItems(ui.Center).Padding(0, 20, 0, a.headerLead(c.TitleBar())).DragWindow().Children(func() {
+	t := c.Theme()
+	bar := c.TitleBar()
+	ui.Row(c).Height(titleBarHeight).Shrink(0).AlignItems(ui.Center).Padding(0, headerTail(bar), 0, a.headerLead(bar)).DragWindow().Children(func() {
+		label := "Hide Sidebar"
+		if a.collapsed {
+			label = "Show Sidebar"
+		}
+		toggle := ui.ButtonBase(c.Key("toggle")).Size(32, 28).Shrink(0).Margin(0, 2, 0, 0).
+			Radius(6).Center().TextColor(t.TextMuted).Label(label).Tooltip(label)
+		if toggle.Hovered() {
+			toggle.Background(t.SurfaceHover)
+		}
+		toggle.Children(func() { ui.Icon(c, sidebarIcon).Size(16, 16) })
+		if toggle.Clicked() {
+			a.toggleSidebar()
+		}
 		ui.Text(c, title).FontSize(15).Bold().Grow(1).SingleLine()
 		if actions != nil {
 			actions()
@@ -241,14 +253,21 @@ func (a *app) paneHeader(c *ui.Context, title string, actions func()) {
 }
 
 // headerLead is the header's left padding: while the sidebar hides, the
-// window controls and the sidebar's toggle sit over the pane's left
-// edge, so the header starts right of the toggle, which rests at
-// bar.Left+8 and is 32 wide.
+// window controls sit over the pane's left edge (macOS), so the header
+// starts right of them.
 func (a *app) headerLead(bar ui.TitleBar) float32 {
 	if a.collapsed {
-		return bar.Left + 48
+		return max(bar.Left+8, 20)
 	}
 	return 20
+}
+
+// headerTail is the header's right padding: on Windows and Linux the
+// window buttons (minimize, maximize, close) sit over the pane's right
+// edge, so the header's actions start left of them; on macOS the
+// traffic lights are on the left and Right is 0.
+func headerTail(bar ui.TitleBar) float32 {
+	return bar.Right + 20
 }
 
 // pane is the content area: the page of the item chosen in the sidebar.
@@ -384,7 +403,7 @@ func main() {
 		}
 		a.installMenu()
 		mygo.NewWindow(mygo.WindowOptions{
-			Title:     "Aurora",
+			Title:     appName,
 			Width:     1000,
 			Height:    640,
 			MinWidth:  720,

@@ -69,8 +69,8 @@ func TestView(t *testing.T) {
 }
 
 // While the sidebar hides, the header of a pane starts right of the
-// sidebar's toggle, clear of the window controls over the pane's left
-// edge; it starts at the pane's edge otherwise.
+// window controls over the pane's left edge (macOS); it starts at the
+// pane's edge otherwise.
 func TestHeaderLead(t *testing.T) {
 	bar := ui.TitleBar{Left: 78}
 	a := &app{}
@@ -78,7 +78,25 @@ func TestHeaderLead(t *testing.T) {
 		t.Errorf("headerLead with the sidebar showing = %v, want 20", lead)
 	}
 	a.collapsed = true
-	if lead := a.headerLead(bar); lead != 126 {
-		t.Errorf("headerLead with the sidebar hidden = %v, want 126", lead)
+	if lead := a.headerLead(bar); lead != 86 {
+		t.Errorf("headerLead with the sidebar hidden = %v, want 86", lead)
+	}
+	// Where the window controls are on the right (Windows, Linux), the
+	// pane's left edge is clear.
+	if lead := a.headerLead(ui.TitleBar{Right: 138}); lead != 20 {
+		t.Errorf("headerLead without left controls = %v, want 20", lead)
+	}
+}
+
+// On Windows and Linux the window buttons sit over the pane's right
+// edge, so the header's actions start left of them; on macOS Right is 0
+// and the padding is the usual 20.
+func TestHeaderTail(t *testing.T) {
+	if tail := headerTail(ui.TitleBar{}); tail != 20 {
+		t.Errorf("headerTail without window buttons = %v, want 20", tail)
+	}
+	bar := ui.TitleBar{Right: 138} // three buttons, 46 each
+	if tail := headerTail(bar); tail != 158 {
+		t.Errorf("headerTail with window buttons = %v, want 158", tail)
 	}
 }
